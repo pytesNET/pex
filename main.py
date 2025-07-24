@@ -21,10 +21,10 @@ class PexApp(tk.Tk):
 
         self.menubar = None
         self.settings_menu = None
+        self.file_menu = None
         self.label_menu = None
-        self.price_menu = None
+        self.file_var = tk.StringVar(value=pexconfig.get_file_printer())
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
-        self.price_var = tk.StringVar(value=pexconfig.get_price_printer())
 
         self.title("PEX - Printer Execution eXchange (0.1.0)")
         self.iconbitmap('icon.ico')
@@ -65,17 +65,33 @@ class PexApp(tk.Tk):
         self.settings_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Settings", menu=self.settings_menu)
 
+        self.file_menu = tk.Menu(self.settings_menu, tearoff=0)
         self.label_menu = tk.Menu(self.settings_menu, tearoff=0)
-        self.price_menu = tk.Menu(self.settings_menu, tearoff=0)
+        self.settings_menu.add_cascade(label="File Printer", menu=self.file_menu)
         self.settings_menu.add_cascade(label="Label Printer", menu=self.label_menu)
-        self.settings_menu.add_cascade(label="Price Printer", menu=self.price_menu)
 
         self.refresh_printer_menus()
 
     def refresh_printer_menus(self):
         printers = printer.get_printers()
+        self.file_var = tk.StringVar(value=pexconfig.get_file_printer())
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
-        self.price_var = tk.StringVar(value=pexconfig.get_price_printer())
+
+        # File-Printer
+        self.file_menu.delete(0, tk.END)
+        self.file_menu.add_radiobutton(
+            label="None",
+            variable=self.file_var,
+            value="null",
+            command=self.set_file_printer
+        )
+        for pr in printers:
+            self.file_menu.add_radiobutton(
+                label=pr,
+                variable=self.file_var,
+                value=pr,
+                command=self.set_file_printer
+            )
 
         # Label-Printer
         self.label_menu.delete(0, tk.END)
@@ -93,27 +109,11 @@ class PexApp(tk.Tk):
                 command=self.set_label_printer
             )
 
-        # PriceTag-Printer
-        self.price_menu.delete(0, tk.END)
-        self.price_menu.add_radiobutton(
-            label="None",
-            variable=self.price_var,
-            value="null",
-            command=self.set_price_printer
-        )
-        for pr in printers:
-            self.price_menu.add_radiobutton(
-                label=pr,
-                variable=self.price_var,
-                value=pr,
-                command=self.set_price_printer
-            )
+    def set_file_printer(self):
+        pexconfig.set_file_printer(self.file_var.get())
 
     def set_label_printer(self):
         pexconfig.set_label_printer(self.label_var.get())
-
-    def set_price_printer(self):
-        pexconfig.set_price_printer(self.price_var.get())
 
     def log(self, output):
         self.output_text.config(state='normal')

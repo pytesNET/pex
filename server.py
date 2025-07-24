@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import base64
 import os
 import pexconfig
 import printer
@@ -25,36 +24,36 @@ def apply_cors_headers(response):
 
 @app.route('/status', methods=['GET'])
 def status():
-    label = pexconfig.get_label_printer()
-    if len(label) == 0 or label == "null":
-        label = None
+    file_printer = pexconfig.get_file_printer()
+    if len(file_printer) == 0 or file_printer == "null":
+        file_printer = None
 
-    price = pexconfig.get_price_printer()
-    if len(price) == 0 or price == "null":
-        price = None
+    label_printer = pexconfig.get_label_printer()
+    if len(label_printer) == 0 or label_printer == "null":
+        label_printer = None
 
     return jsonify({'status': 'success', 'result': {
-        'label': label,
-        'price': price,
+        'file': file_printer,
+        'label': label_printer,
     }}), 200
 
 
 @app.route('/print/file', methods=['POST'])
 def print_file():
-    printer_name = pexconfig.get_price_printer()
-    if len(printer_name) == 0 or printer_name == "null":
-        return jsonify({'status': 'error', 'message': 'No price printer set'}), 400
+    printer_name = pexconfig.get_file_printer()
+    if not printer_name or printer_name == "null":
+        return jsonify({'status': 'error', 'message': 'No file printer set'}), 400
 
-    data = request.get_json()
-    if not data or 'filename' not in data or 'filedata' not in data:
-        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    if 'pdf' not in request.files:
+        return jsonify({'status': 'error', 'message': 'No file uploaded'}), 400
 
-    filename = os.path.basename(data['filename'])
-    filedata = data['filedata']
+    pdf_file = request.files['pdf']
+    filename = pdf_file.filename or 'label.pdf'
+    filename = os.path.basename(filename)
     filepath = os.path.join(UPLOAD_FOLDER, filename)
+
     try:
-        with open(filepath, "wb") as file:
-            file.write(base64.b64decode(filedata))
+        pdf_file.save(filepath)
         printer.file(filepath)
         os.remove(filepath)
     except Exception as exc:
@@ -65,7 +64,7 @@ def print_file():
 
 @app.route('/print/label', methods=['POST'])
 def print_label():
-    printer_name = pexconfig.get_price_printer()
+    printer_name = pexconfig.get_label_printer()
     if len(printer_name) == 0 or printer_name == "null":
         return jsonify({'status': 'error', 'message': 'No label printer set'}), 400
 

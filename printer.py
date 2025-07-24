@@ -42,7 +42,7 @@ def wrap_text(text, font_name, font_size, max_width):
 
 
 def file(filepath: str, quantity: int = 1):
-    printer_name = pexconfig.get_price_printer()
+    printer_name = pexconfig.get_file_printer()
     if len(printer_name) == 0 or printer_name == "null":
         return False
 

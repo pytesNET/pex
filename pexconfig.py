@@ -4,8 +4,8 @@ import os
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "pexconfig.json")
 
 DEFAULT_CONFIG = {
+    "file_printer": "null",
     "label_printer": "null",
-    "tag_printer": "null",
 }
 
 
@@ -22,6 +22,16 @@ def save_config(config):
         json.dump(config, f, indent=2)
 
 
+def get_file_printer():
+    return load_config().get("file_printer", "")
+
+
+def set_file_printer(name):
+    config = load_config()
+    config["file_printer"] = name
+    save_config(config)
+
+
 def get_label_printer():
     return load_config().get("label_printer", "")
 
@@ -29,14 +39,4 @@ def get_label_printer():
 def set_label_printer(name):
     config = load_config()
     config["label_printer"] = name
-    save_config(config)
-
-
-def get_price_printer():
-    return load_config().get("tag_printer", "")
-
-
-def set_price_printer(name):
-    config = load_config()
-    config["tag_printer"] = name
     save_config(config)
