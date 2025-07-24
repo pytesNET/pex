@@ -41,17 +41,13 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# PyCharm
+# PyCharm / VSCode
 .idea/
 *.iml
-
-# VSCode (optional, falls du mal VSCode nutzt)
 .vscode/
 
-# macOS
+# macOS / Windows
 .DS_Store
-
-# Windows
 Thumbs.db
 Desktop.ini
 
