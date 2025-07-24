@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import base64
 import os
+import pexconfig
 import printer
 
 app = Flask(__name__)
@@ -24,13 +25,27 @@ def apply_cors_headers(response):
 
 @app.route('/status', methods=['GET'])
 def status():
-    return jsonify({'status': 'success', 'result': {}}), 200
+    label = pexconfig.get_label_printer()
+    if len(label) == 0 or label == "null":
+        label = None
+
+    price = pexconfig.get_price_printer()
+    if len(price) == 0 or price == "null":
+        price = None
+
+    return jsonify({'status': 'success', 'result': {
+        'label': label,
+        'price': price,
+    }}), 200
 
 
 @app.route('/print/file', methods=['POST'])
 def print_file():
-    data = request.get_json()
+    printer_name = pexconfig.get_price_printer()
+    if len(printer_name) == 0 or printer_name == "null":
+        return jsonify({'status': 'error', 'message': 'No price printer set'}), 400
 
+    data = request.get_json()
     if not data or 'filename' not in data or 'filedata' not in data:
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
 
@@ -50,23 +65,15 @@ def print_file():
 
 @app.route('/print/label', methods=['POST'])
 def print_label():
-    data = request.get_json()
+    printer_name = pexconfig.get_price_printer()
+    if len(printer_name) == 0 or printer_name == "null":
+        return jsonify({'status': 'error', 'message': 'No label printer set'}), 400
 
+    data = request.get_json()
     if not data or 'model' not in data or 'hashtag' not in data:
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
 
     printer.label(data['model'], data['hashtag'], data['quantity'] if 'quantity' in data else 1)
-    return jsonify({'status': 'success', 'result': {'message': 'Success'}}), 200
-
-
-@app.route('/print/tag', methods=['POST'])
-def print_tag():
-    data = request.get_json()
-
-    if not data or 'model' not in data or 'hashtag' not in data:
-        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
-
-    print_label(data['model'], data['hashtag'], data['quantity'] if 'quantity' in data else 1)
     return jsonify({'status': 'success', 'result': {'message': 'Success'}}), 200
 
 

@@ -1,11 +1,11 @@
+from tkinter import scrolledtext
+import tkinter as tk
 import ctypes
 import os
 import pexconfig
 import printer
 import service
 import sys
-import tkinter as tk
-from tkinter import scrolledtext
 
 
 class PexApp(tk.Tk):

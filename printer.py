@@ -1,10 +1,11 @@
-import tempfile
-import os
-import subprocess
-import sys
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.units import mm
+import tempfile
+import os
+import pexconfig
+import subprocess
+import sys
 
 if sys.platform == "win32":
     import win32print
@@ -40,19 +41,23 @@ def wrap_text(text, font_name, font_size, max_width):
     return lines
 
 
-def file(filepath: str, quantity: int = 1, printer_name: str = None):
+def file(filepath: str, quantity: int = 1):
+    printer_name = pexconfig.get_price_printer()
+    if len(printer_name) == 0 or printer_name == "null":
+        return False
+
     if sys.platform == "win32":
-        # Optional: Windows-Logik (Sumatra, Acrobat, ...), wie bei label()
-        # (Oder: Einfach mit "print" Befehl, aber ohne Konfiguration)
         for _ in range(quantity):
             os.startfile(filepath, "print")
     else:
-        if printer_name is None:
-            printer_name = os.getenv("PRINTER", "Zebra")
         subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), filepath], check=True)
 
 
-def label(model: str, hashtag: str, quantity: int = 1, printer_name: str = None):
+def label(model: str, hashtag: str, quantity: int = 1):
+    printer_name = pexconfig.get_label_printer()
+    if len(printer_name) == 0 or printer_name == "null":
+        return False
+
     tmpdir = tempfile.gettempdir()
     file = os.path.join(tmpdir, 'label.pdf')
 
@@ -85,8 +90,6 @@ def label(model: str, hashtag: str, quantity: int = 1, printer_name: str = None)
     c.save()
 
     if sys.platform == "win32":
-        if printer_name is None:
-            printer_name = "ZDesigner ZD410"
         print_defaults = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
         handle = win32print.OpenPrinter(printer_name, print_defaults)
         level = 2
@@ -104,6 +107,4 @@ def label(model: str, hashtag: str, quantity: int = 1, printer_name: str = None)
             file
         ], check=True)
     else:
-        if printer_name is None:
-            printer_name = os.getenv("PRINTER", "Zebra")
         subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), "-o", "landscape", file], check=True)
