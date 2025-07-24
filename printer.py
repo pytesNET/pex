@@ -1,0 +1,109 @@
+import tempfile
+import os
+import subprocess
+import sys
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.lib.units import mm
+
+if sys.platform == "win32":
+    import win32print
+
+
+def get_printers():
+    if sys.platform == "win32":
+        printers = [pr[2] for pr in win32print.EnumPrinters(2)]
+    else:
+        try:
+            out = os.popen("lpstat -e").read()
+            printers = [line.strip() for line in out.splitlines() if line.strip()]
+        except Exception:
+            printers = []
+    return sorted(printers, key=lambda s: s.lower())
+
+
+def wrap_text(text, font_name, font_size, max_width):
+    words = text.split()
+    lines = []
+    current_line = ""
+    for word in words:
+        test_line = current_line + " " + word if current_line else word
+        line_width = stringWidth(test_line, font_name, font_size)
+        if line_width <= max_width:
+            current_line = test_line
+        else:
+            if current_line:
+                lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
+    return lines
+
+
+def file(filepath: str, quantity: int = 1, printer_name: str = None):
+    if sys.platform == "win32":
+        # Optional: Windows-Logik (Sumatra, Acrobat, ...), wie bei label()
+        # (Oder: Einfach mit "print" Befehl, aber ohne Konfiguration)
+        for _ in range(quantity):
+            os.startfile(filepath, "print")
+    else:
+        if printer_name is None:
+            printer_name = os.getenv("PRINTER", "Zebra")
+        subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), filepath], check=True)
+
+
+def label(model: str, hashtag: str, quantity: int = 1, printer_name: str = None):
+    tmpdir = tempfile.gettempdir()
+    file = os.path.join(tmpdir, 'label.pdf')
+
+    wmm = 51
+    hmm = 25
+    w = wmm * mm
+    h = hmm * mm
+
+    c = canvas.Canvas(file, pagesize=(w, h))
+    c.setFillColorRGB(0,0,0)
+
+    font_name = "Helvetica-Bold"
+    font_size = 10
+    line_height = 12
+
+    max_text_width = w - 2 * mm
+    wrapped_lines = []
+    for line in [model, hashtag]:
+        wrapped_lines.extend(wrap_text(line, font_name, font_size, max_text_width))
+
+    total_text_height = line_height * len(wrapped_lines)
+    start_y = (h + total_text_height) / 2 - font_size
+
+    for i, line in enumerate(wrapped_lines):
+        text_width = stringWidth(line, font_name, font_size)
+        x = (w - text_width) / 2
+        y = start_y - i * line_height
+        c.setFont(font_name, font_size)
+        c.drawString(x, y, line)
+    c.save()
+
+    if sys.platform == "win32":
+        if printer_name is None:
+            printer_name = "ZDesigner ZD410"
+        print_defaults = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
+        handle = win32print.OpenPrinter(printer_name, print_defaults)
+        level = 2
+        attributes = win32print.GetPrinter(handle, level)
+        attributes['pDevMode'].PaperWidth = 510
+        attributes['pDevMode'].PaperLength = 250
+        attributes['pDevMode'].Orientation = 1
+        attributes['pDevMode'].Copies = quantity
+        win32print.SetPrinter(handle, level, attributes, 0)
+        sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+        subprocess.run([
+            sumatra_path,
+            "-print-to", printer_name,
+            "-print-settings", "noscale,landscape",
+            file
+        ], check=True)
+    else:
+        if printer_name is None:
+            printer_name = os.getenv("PRINTER", "Zebra")
+        subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), "-o", "landscape", file], check=True)

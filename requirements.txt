@@ -1,0 +1,8 @@
+flask
+flask-cors
+pandas
+pdfplumber
+Pillow
+pywin32
+reportlab
+tabula-py
