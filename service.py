@@ -7,7 +7,8 @@ SERVICE_NAME = "PrinterService"
 WINDOWS = sys.platform == "win32"
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 SERVER_PATH = os.path.join(ROOT_PATH, "server.py")
-TEMP_FILE = os.path.join(ROOT_PATH, "temp", "error.log")
+TEMP_ERR_FILE = os.path.join(ROOT_PATH, "temp", "error.log")
+TEMP_SCC_FILE = os.path.join(ROOT_PATH, "temp", "out.log")
 NSSM_PATH = os.path.join(ROOT_PATH, "tools", "nssm.exe")
 VENV_PATH = os.path.join(ROOT_PATH, ".venv")
 PYTHON_PATH = os.path.join(VENV_PATH, "Scripts", "python.exe") if WINDOWS else os.path.join(VENV_PATH, "bin", "python")
@@ -72,7 +73,8 @@ def install():
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "Description", "Printer Service"], timeout=10)
-            subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "AppStderr", TEMP_FILE], timeout=10)
+            subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "AppStderr", TEMP_ERR_FILE], timeout=10)
+            subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "AppStdout", TEMP_SCC_FILE], timeout=10)
             return True, f"Service {SERVICE_NAME} installiert!"
         else:
             return False, result.stdout + "\n" + result.stderr

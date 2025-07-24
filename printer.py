@@ -47,8 +47,19 @@ def file(filepath: str, quantity: int = 1):
         return False
 
     if sys.platform == "win32":
-        for _ in range(quantity):
-            os.startfile(filepath, "print")
+        print_defaults = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
+        handle = win32print.OpenPrinter(printer_name, print_defaults)
+        level = 2
+        attributes = win32print.GetPrinter(handle, level)
+        attributes['pDevMode'].Copies = quantity
+        win32print.SetPrinter(handle, level, attributes, 0)
+        sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+        subprocess.run([
+            sumatra_path,
+            "-print-to", printer_name,
+            "-print-settings", "noscale,landscape",
+            filepath
+        ], check=True)
     else:
         subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), filepath], check=True)
 

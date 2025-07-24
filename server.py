@@ -7,8 +7,9 @@ import printer
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = 'temp'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+TEMP_PATH = os.path.join(ROOT_PATH, "temp")
+os.makedirs(TEMP_PATH, exist_ok=True)
 
 
 @app.after_request
@@ -50,7 +51,7 @@ def print_file():
     pdf_file = request.files['pdf']
     filename = pdf_file.filename or 'label.pdf'
     filename = os.path.basename(filename)
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    filepath = os.path.join(TEMP_PATH, filename)
 
     try:
         pdf_file.save(filepath)
