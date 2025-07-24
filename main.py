@@ -24,7 +24,7 @@ class PexApp(tk.Tk):
         self.label_menu = None
         self.price_menu = None
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
-        self.price_var = tk.StringVar(value=pexconfig.get_tag_printer())
+        self.price_var = tk.StringVar(value=pexconfig.get_price_printer())
 
         self.title("PEX - Printer Execution eXchange (0.1.0)")
         self.iconbitmap('icon.ico')
@@ -68,17 +68,23 @@ class PexApp(tk.Tk):
         self.label_menu = tk.Menu(self.settings_menu, tearoff=0)
         self.price_menu = tk.Menu(self.settings_menu, tearoff=0)
         self.settings_menu.add_cascade(label="Label Printer", menu=self.label_menu)
-        self.settings_menu.add_cascade(label="PriceTag Printer", menu=self.price_menu)
+        self.settings_menu.add_cascade(label="Price Printer", menu=self.price_menu)
 
         self.refresh_printer_menus()
 
     def refresh_printer_menus(self):
         printers = printer.get_printers()
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
-        self.price_var = tk.StringVar(value=pexconfig.get_tag_printer())
+        self.price_var = tk.StringVar(value=pexconfig.get_price_printer())
 
         # Label-Printer
         self.label_menu.delete(0, tk.END)
+        self.label_menu.add_radiobutton(
+            label="None",
+            variable=self.label_var,
+            value="null",
+            command=self.set_label_printer
+        )
         for pr in printers:
             self.label_menu.add_radiobutton(
                 label=pr,
@@ -89,6 +95,12 @@ class PexApp(tk.Tk):
 
         # PriceTag-Printer
         self.price_menu.delete(0, tk.END)
+        self.price_menu.add_radiobutton(
+            label="None",
+            variable=self.price_var,
+            value="null",
+            command=self.set_price_printer
+        )
         for pr in printers:
             self.price_menu.add_radiobutton(
                 label=pr,
@@ -101,7 +113,7 @@ class PexApp(tk.Tk):
         pexconfig.set_label_printer(self.label_var.get())
 
     def set_price_printer(self):
-        pexconfig.set_tag_printer(self.price_var.get())
+        pexconfig.set_price_printer(self.price_var.get())
 
     def log(self, output):
         self.output_text.config(state='normal')
