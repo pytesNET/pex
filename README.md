@@ -11,7 +11,7 @@ Printer execution exchange server, service and utilities for cross-os compatibil
 python -m venv .venv
 ```
 
-2. Active virtual environment
+2. Activate virtual environment
 
 ```sh
 .venv\Scripts\activate
