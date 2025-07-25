@@ -51,6 +51,9 @@ def file(filepath: str, quantity: int = 1):
         handle = win32print.OpenPrinter(printer_name, print_defaults)
         level = 2
         attributes = win32print.GetPrinter(handle, level)
+        attributes['pDevMode'].PaperWidth = 1050
+        attributes['pDevMode'].PaperLength = 1480
+        attributes['pDevMode'].Orientation = 1
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
         sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
@@ -78,7 +81,7 @@ def label(model: str, hashtag: str, quantity: int = 1):
     h = hmm * mm
 
     c = canvas.Canvas(file, pagesize=(w, h))
-    c.setFillColorRGB(0,0,0)
+    c.setFillColorRGB(0, 0, 0)
 
     font_name = "Helvetica-Bold"
     font_size = 10
