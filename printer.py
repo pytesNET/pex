@@ -53,14 +53,14 @@ def file(filepath: str, quantity: int = 1):
         attributes = win32print.GetPrinter(handle, level)
         attributes['pDevMode'].PaperWidth = 1050
         attributes['pDevMode'].PaperLength = 1480
-        attributes['pDevMode'].Orientation = 2
+        attributes['pDevMode'].Orientation = 1
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
         sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
         subprocess.run([
             sumatra_path,
             "-print-to", printer_name,
-            "-print-settings", "noscale,landscape",
+            "-print-settings", "noscale,portrait,paper=A6",
             filepath
         ], check=True)
     else:
