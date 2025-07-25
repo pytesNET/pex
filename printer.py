@@ -53,7 +53,7 @@ def file(filepath: str, quantity: int = 1):
         attributes = win32print.GetPrinter(handle, level)
         attributes['pDevMode'].PaperWidth = 1050
         attributes['pDevMode'].PaperLength = 1480
-        attributes['pDevMode'].Orientation = 1
+        attributes['pDevMode'].Orientation = 2
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
         sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
