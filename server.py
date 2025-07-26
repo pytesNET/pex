@@ -45,22 +45,32 @@ def print_file():
     if not printer_name or printer_name == "null":
         return jsonify({'status': 'error', 'message': 'No file printer set'}), 400
 
-    if 'pdf' not in request.files:
+    if 'file' not in request.files:
         return jsonify({'status': 'error', 'message': 'No file uploaded'}), 400
 
-    pdf_file = request.files['pdf']
-    filename = pdf_file.filename or 'label.pdf'
-    filename = os.path.basename(filename)
+    # Get Data
+    file = request.files['file']
+    paper = request.form.get('format', 'A6')
+    orientation = request.form.get('orientation', 'portrait')
+    quantity = int(request.form.get('quantity', 1))
+
+    filename = file.filename or 'label.pdf'
+    filename = os.path.basename(filename).replace(' ', '_')
     filepath = os.path.join(TEMP_PATH, filename)
 
+    # Print
     try:
-        pdf_file.save(filepath)
-        printer.file(filepath)
+        file.save(filepath)
+        printer.file(filepath, paper, orientation, quantity)
         os.remove(filepath)
     except Exception as exc:
         return jsonify({'status': 'error', 'message': str(exc)}), 500
 
-    return jsonify({'status': 'success', 'result': {'message': 'Success', 'filename': filename}}), 200
+    return jsonify({'status': 'success', 'result': {
+        'message': 'Success',
+        'filename': filename,
+        'printer': printer_name
+    }}), 200
 
 
 @app.route('/print/label', methods=['POST'])

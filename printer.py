@@ -41,19 +41,39 @@ def wrap_text(text, font_name, font_size, max_width):
     return lines
 
 
-def file(filepath: str, quantity: int = 1):
+def convert_format(paper: str):
+    paper = paper.lower().replace('×', 'x').replace(' ', '')
+    standards = {
+        'a4': (210, 297),
+        'a5': (148, 210),
+        'a6': (105, 148),
+    }
+    if paper in standards:
+        return standards[paper]
+
+    try:
+        width_str, height_str = paper.lower().split('x')
+        width = float(width_str)
+        height = float(height_str)
+        return width, height
+    except Exception as e:
+        raise ValueError(f"Invalid Paper Format: '{paper}'.") from e
+
+
+def file(filepath: str, paper: str = 'A6', orientation: str = 'portrait', quantity: int = 1):
     printer_name = pexconfig.get_file_printer()
     if len(printer_name) == 0 or printer_name == "null":
         return False
 
+    paper = convert_format(paper)
     if sys.platform == "win32":
         print_defaults = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
         handle = win32print.OpenPrinter(printer_name, print_defaults)
         level = 2
         attributes = win32print.GetPrinter(handle, level)
-        attributes['pDevMode'].PaperWidth = 1050
-        attributes['pDevMode'].PaperLength = 1480
-        attributes['pDevMode'].Orientation = 1
+        attributes['pDevMode'].PaperWidth = paper[0] * 10
+        attributes['pDevMode'].PaperLength = paper[1] * 10
+        attributes['pDevMode'].Orientation = 1 if orientation == 'portrait' else 2
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
         sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
