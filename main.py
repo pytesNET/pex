@@ -43,6 +43,9 @@ class PexApp(tk.Tk):
         self.btn_uninstall = tk.Button(frame, text="Uninstall", width=12, command=lambda: self.exec(service.uninstall))
         self.btn_uninstall.grid(row=0, column=1, padx=5, pady=5)
 
+        self.btn_update = tk.Button(frame, text="Update", width=12, command=lambda: self.exec(self.update))
+        self.btn_update.grid(row=0, column=3, padx=5, pady=5)
+
         self.btn_start = tk.Button(frame, text="Start", width=12, command=lambda: self.exec(service.start))
         self.btn_start.grid(row=1, column=0, padx=5, pady=5)
 
@@ -114,6 +117,14 @@ class PexApp(tk.Tk):
 
     def set_label_printer(self):
         pexconfig.set_label_printer(self.label_var.get())
+
+    def update(self):
+        try:
+            result = os.popen('git pull').read()
+            service.restart()
+            return True, result.strip()
+        except Exception as e:
+            return False, f"Update fehlgeschlagen: {str(e)}"
 
     def log(self, output):
         self.output_text.config(state='normal')
