@@ -69,7 +69,6 @@ def print_file():
         return jsonify({'status': 'error', 'message': str(exc)}), 500
 
     return jsonify({'status': 'success', 'result': {
-        'message': 'Success',
         'filename': filename,
         'printer': printer_name
     }}), 200
@@ -81,12 +80,19 @@ def print_label():
     if len(printer_name) == 0 or printer_name == "null":
         return jsonify({'status': 'error', 'message': 'No label printer set'}), 400
 
-    data = request.get_json()
-    if not data or 'model' not in data or 'hashtag' not in data:
-        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    model = request.form.get('model', 'MODEL')
+    hashtag = request.form.get('hashtag', '#HASHTAG')
+    quantity = int(request.form.get('quantity', 1))
 
-    printer.label(data['model'], data['hashtag'], data['quantity'] if 'quantity' in data else 1)
-    return jsonify({'status': 'success', 'result': {'message': 'Success'}}), 200
+    printer.label(model, hashtag, quantity)
+    return jsonify({'status': 'success', 'result': {
+        'data': {
+            'model': model,
+            'hashtag': hashtag,
+            'quantity': quantity,
+        },
+        'printer': printer_name
+    }}), 200
 
 
 if __name__ == '__main__':
