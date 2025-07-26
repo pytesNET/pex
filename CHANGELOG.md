@@ -1,6 +1,10 @@
 PEX - Changelog
 ===============
 
+## Version 0.2.1 (Alpha)
+- Fix: Correctly respond on label printer path.
+- Fix: Version number on GUI.
+
 ## Version 0.2.0 (Alpha)
 - Add: Support for format, orientation, and quantity in server.py.
 - Add: New update command to the interface (runs git pull and restarts service).

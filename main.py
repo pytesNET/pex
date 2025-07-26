@@ -28,7 +28,7 @@ class PexApp(tk.Tk):
         self.file_var = tk.StringVar(value=pexconfig.get_file_printer())
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
 
-        self.title(f"PEX - Printer Execution eXchange ({{__VERSION__}})")
+        self.title(f"PEX - Printer Execution eXchange ({__VERSION__})")
         self.iconbitmap('icon.ico')
         self.setup_ui()
         self.create_menu()
