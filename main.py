@@ -5,7 +5,9 @@ import os
 import pexconfig
 import printer
 import service
+import subprocess
 import sys
+from version import __VERSION__
 
 
 class PexApp(tk.Tk):
@@ -26,7 +28,7 @@ class PexApp(tk.Tk):
         self.file_var = tk.StringVar(value=pexconfig.get_file_printer())
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
 
-        self.title("PEX - Printer Execution eXchange (0.1.0)")
+        self.title(f"PEX - Printer Execution eXchange ({{__VERSION__}})")
         self.iconbitmap('icon.ico')
         self.setup_ui()
         self.create_menu()
@@ -120,11 +122,11 @@ class PexApp(tk.Tk):
 
     def update(self):
         try:
-            result = os.popen('git pull').read()
+            result = subprocess.check_output(['git', 'pull'], stderr=subprocess.STDOUT, text=True)
             service.restart()
             return True, result.strip()
-        except Exception as e:
-            return False, f"Update fehlgeschlagen: {str(e)}"
+        except subprocess.CalledProcessError as e:
+            return False, e.output.strip()
 
     def log(self, output):
         self.output_text.config(state='normal')

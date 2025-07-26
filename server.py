@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from version import __VERSION__
 import os
 import pexconfig
 import printer
@@ -36,6 +37,7 @@ def status():
     return jsonify({'status': 'success', 'result': {
         'file': file_printer,
         'label': label_printer,
+        'version': __VERSION__,
     }}), 200
 
 
