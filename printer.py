@@ -1,6 +1,7 @@
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.units import mm
+from pathlib import Path
 import tempfile
 import os
 import pexconfig
@@ -60,6 +61,35 @@ def convert_format(paper: str):
         raise ValueError(f"Invalid Paper Format: '{paper}'.") from e
 
 
+def get_sumatra_path() -> str:
+    candidates = [Path(r"C:\Program Files\SumatraPDF\SumatraPDF.exe")]
+
+    def add_portable_candidates(start: Path):
+        for parent in [start.resolve()] + list(start.resolve().parents):
+            candidates.append(parent / "tools" / "SumatraPDF-3.5.2-64.exe")
+
+    try:
+        here = Path(__file__).parent
+        add_portable_candidates(here)
+    except NameError:
+        pass
+
+    add_portable_candidates(Path.cwd())
+
+    seen = set()
+    unique_candidates = []
+    for c in candidates:
+        if c not in seen:
+            unique_candidates.append(c)
+            seen.add(c)
+
+    for p in unique_candidates:
+        if p.is_file():
+            return str(p)
+
+    raise FileNotFoundError("SumatraPDF wurde nicht gefunden.")
+
+
 def file(filepath: str, paper: str = 'A6', orientation: str = 'portrait', quantity: int = 1):
     printer_name = pexconfig.get_file_printer()
     if len(printer_name) == 0 or printer_name == "null":
@@ -76,7 +106,7 @@ def file(filepath: str, paper: str = 'A6', orientation: str = 'portrait', quanti
         attributes['pDevMode'].Orientation = 1 if orientation == 'portrait' else 2
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
-        sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+        sumatra_path = get_sumatra_path()
         subprocess.run([
             sumatra_path,
             "-print-to", printer_name,
@@ -133,7 +163,7 @@ def label(model: str, hashtag: str, quantity: int = 1):
         attributes['pDevMode'].Orientation = 1
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
-        sumatra_path = r"C:\Program Files\SumatraPDF\SumatraPDF.exe"
+        sumatra_path = get_sumatra_path()
         subprocess.run([
             sumatra_path,
             "-print-to", printer_name,
