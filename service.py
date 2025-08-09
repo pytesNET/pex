@@ -1,97 +1,33 @@
-import os
-import subprocess
 import sys
+from importlib import import_module
 
-SERVICE_NAME = "PrinterService"
-
-WINDOWS = sys.platform == "win32"
-ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
-SERVER_PATH = os.path.join(ROOT_PATH, "server.py")
-TEMP_ERR_FILE = os.path.join(ROOT_PATH, "temp", "error.log")
-TEMP_SCC_FILE = os.path.join(ROOT_PATH, "temp", "out.log")
-NSSM_PATH = os.path.join(ROOT_PATH, "tools", "nssm.exe")
-VENV_PATH = os.path.join(ROOT_PATH, ".venv")
-PYTHON_PATH = os.path.join(VENV_PATH, "Scripts", "python.exe") if WINDOWS else os.path.join(VENV_PATH, "bin", "python")
+_impl_name = "service_windows" if sys.platform == "win32" else "service_linux"
+_impl = import_module(_impl_name)
 
 
-def run_nssm_command(command):
-    if not os.path.exists(NSSM_PATH):
-        return False, f"nssm.exe not found: {NSSM_PATH}"
-
-    try:
-        result = subprocess.run(
-            [NSSM_PATH, command, SERVICE_NAME],
-            capture_output=True, text=True, shell=True, encoding=os.device_encoding(1)
-        )
-        if result.returncode == 0:
-            return True, result.stdout.replace('\x00', '').strip()
-        else:
-            return False, result.stderr.replace('\x00', '').strip()
-    except Exception as e:
-        return False, str(e)
+def _missing_tool(msg: str):
+    return False, msg
 
 
-def start():
-    return run_nssm_command("start")
+def start(): return _impl.start()
 
 
-def stop():
-    return run_nssm_command("stop")
+def stop(): return _impl.stop()
 
 
-def restart():
-    return run_nssm_command("restart")
+def restart(): return _impl.restart()
 
 
-def status():
-    return run_nssm_command("status")
+def status(): return _impl.status()
 
 
-def is_installed():
-    result = run_nssm_command("status")
-    return result[0]
+def is_installed(): return _impl.is_installed()
 
 
-def is_running():
-    result = run_nssm_command("status")
-    if result[0]:
-        return 'SERVICE_RUNNING' in result[1]
-    else:
-        return False
+def is_running(): return _impl.is_running()
 
 
-def install():
-    if not os.path.exists(PYTHON_PATH):
-        return False, f"Python nicht gefunden: {PYTHON_PATH}"
-    if not os.path.exists(SERVER_PATH):
-        return False, f"server.py nicht gefunden: {SERVER_PATH}"
-    if not os.path.exists(NSSM_PATH):
-        return False, f"nssm.exe nicht gefunden: {NSSM_PATH}"
-
-    cmd = [NSSM_PATH, "install", SERVICE_NAME, PYTHON_PATH, SERVER_PATH]
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if result.returncode == 0:
-            subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "Description", "Printer Service"], timeout=10)
-            subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "AppStderr", TEMP_ERR_FILE], timeout=10)
-            subprocess.run([NSSM_PATH, "set", SERVICE_NAME, "AppStdout", TEMP_SCC_FILE], timeout=10)
-            return True, f"Service {SERVICE_NAME} installiert!"
-        else:
-            return False, result.stdout + "\n" + result.stderr
-    except Exception as exc:
-        return False, str(exc)
+def install(): return _impl.install()
 
 
-def uninstall():
-    if not os.path.exists(NSSM_PATH):
-        return False, f"nssm.exe nicht gefunden: {NSSM_PATH}"
-
-    cmd = [NSSM_PATH, "remove", SERVICE_NAME, "confirm"]
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if result.returncode == 0:
-            return True, f"Service {SERVICE_NAME} wurde entfernt!"
-        else:
-            return False, result.stdout + "\n" + result.stderr
-    except Exception as exc:
-        return False, str(exc)
+def uninstall(): return _impl.uninstall()

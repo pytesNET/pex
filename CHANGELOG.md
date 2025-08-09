@@ -1,6 +1,9 @@
 PEX - Changelog
 ===============
 
+## Version 0.3.0 (Alpha)
+- Add: Linux compatibility using PM2.
+
 ## Version 0.2.1 (Alpha)
 - Fix: Correctly respond on label printer path.
 - Fix: Version number on GUI.
