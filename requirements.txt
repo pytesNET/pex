@@ -3,6 +3,6 @@ flask-cors
 pandas
 pdfplumber
 Pillow
-pywin32
+pywin32; sys_platform == "win32"
 reportlab
 tabula-py
