@@ -5,4 +5,4 @@ pdfplumber
 Pillow
 pywin32; sys_platform == "win32"
 reportlab
-tabula-pyg
+tabula-py
