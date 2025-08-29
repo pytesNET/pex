@@ -1,4 +1,5 @@
 from tkinter import scrolledtext
+from pathlib import Path
 import tkinter as tk
 import ctypes
 import os
@@ -8,6 +9,11 @@ import service
 import subprocess
 import sys
 from version import __VERSION__
+
+
+def resource_path(name: str) -> str:
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return str(base / name)
 
 
 class PexApp(tk.Tk):
@@ -29,11 +35,28 @@ class PexApp(tk.Tk):
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
 
         self.title(f"PEX - Printer Execution eXchange ({__VERSION__})")
-        self.iconbitmap('icon.ico')
+        self._set_icon()
         self.setup_ui()
         self.create_menu()
         self.refresh_buttons()
         self.auto_refresh()
+
+    def _set_icon(self):
+        if os.name == "nt":
+            ico = resource_path("icon.ico")
+            if os.path.exists(ico):
+                try:
+                    self.iconbitmap(ico)
+                except tk.TclError:
+                    pass  # fällt unten auf iconphoto zurück
+        for fname in ("icon.png", "icon.gif", "icon.xbm"):
+            f = resource_path(fname)
+            if os.path.exists(f):
+                try:
+                    self.iconphoto(True, tk.PhotoImage(file=f))
+                    break
+                except tk.TclError:
+                    continue
 
     def setup_ui(self):
         frame = tk.Frame(self)
