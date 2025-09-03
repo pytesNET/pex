@@ -15,7 +15,7 @@ TEMP_ERR_FILE = os.path.join(TEMP_PATH, "error.log")
 TEMP_SCC_FILE = os.path.join(TEMP_PATH, "out.log")
 
 VENV_PATH = os.path.join(ROOT_PATH, ".venv")
-PYTHON_PATH = os.path.join(VENV_PATH, "bin", "python")  # Linux venv-Pfad
+PYTHON_PATH = os.path.join(VENV_PATH, "bin", "python")
 PM2_CMD = os.environ.get("PM2_PATH", "pm2")
 
 ENCODING = locale.getpreferredencoding(False) or "utf-8"

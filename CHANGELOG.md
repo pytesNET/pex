@@ -1,6 +1,10 @@
 PEX - Changelog
 ===============
 
+## Version 0.3.1 (Beta)
+- Add: New option to change linux printing utility command.
+- Fix: Linux printing utility command.
+
 ## Version 0.3.0 (Alpha)
 - Add: Linux compatibility using PM2.
 

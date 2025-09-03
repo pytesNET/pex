@@ -90,6 +90,44 @@ def get_sumatra_path() -> str:
     raise FileNotFoundError("SumatraPDF wurde nicht gefunden.")
 
 
+def _printer_supports_copies(printer_name: str) -> bool:
+    try:
+        out = subprocess.check_output(
+            ["lpoptions", "-p", printer_name, "-l"],
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=3
+        )
+        return "copies" in out.lower()
+    except Exception:
+        return False
+
+
+def print_file_linux(printer_name: str, filepath: str, quantity: int, mode: str = "auto"):
+    if quantity <= 1:
+        subprocess.run(["lp", "-d", printer_name, filepath], check=True)
+        return
+
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(filepath)
+
+    if mode == "-n":
+        subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), filepath], check=True)
+    elif mode == "-o":
+        subprocess.run([
+            "lp",
+            "-d", printer_name,
+            "-o", f"copies={quantity}",
+            "-o", "Collate=true",
+            filepath
+        ], check=True)
+        return
+    else:
+        for _ in range(quantity):
+            subprocess.run(["lp", "-d", printer_name, filepath], check=True)
+        return
+
+
 def file(filepath: str, paper: str = 'A6', orientation: str = 'portrait', quantity: int = 1):
     printer_name = pexconfig.get_file_printer()
     if len(printer_name) == 0 or printer_name == "null":
@@ -114,7 +152,8 @@ def file(filepath: str, paper: str = 'A6', orientation: str = 'portrait', quanti
             filepath
         ], check=True)
     else:
-        subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), filepath], check=True)
+        mode = pexconfig.get_linux_command()
+        print_file_linux(printer_name, filepath, quantity, mode)
 
 
 def label(model: str, hashtag: str, quantity: int = 1):
@@ -171,4 +210,5 @@ def label(model: str, hashtag: str, quantity: int = 1):
             file
         ], check=True)
     else:
-        subprocess.run(["lp", "-d", printer_name, "-n", str(quantity), "-o", "landscape", file], check=True)
+        mode = pexconfig.get_linux_command()
+        print_file_linux(printer_name, file, quantity, mode)

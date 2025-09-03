@@ -21,6 +21,7 @@ class PexApp(tk.Tk):
         super().__init__()
         self.btn_install = None
         self.btn_uninstall = None
+        self.btn_update = None
         self.btn_start = None
         self.btn_stop = None
         self.btn_restart = None
@@ -31,8 +32,10 @@ class PexApp(tk.Tk):
         self.settings_menu = None
         self.file_menu = None
         self.label_menu = None
+        self.linux_menu = None
         self.file_var = tk.StringVar(value=pexconfig.get_file_printer())
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
+        self.linux_cmd = tk.StringVar(value=pexconfig.get_linux_command())
 
         self.title(f"PEX - Printer Execution eXchange ({__VERSION__})")
         self._set_icon()
@@ -95,8 +98,10 @@ class PexApp(tk.Tk):
 
         self.file_menu = tk.Menu(self.settings_menu, tearoff=0)
         self.label_menu = tk.Menu(self.settings_menu, tearoff=0)
+        self.linux_menu = tk.Menu(self.settings_menu, tearoff=0)
         self.settings_menu.add_cascade(label="File Printer", menu=self.file_menu)
         self.settings_menu.add_cascade(label="Label Printer", menu=self.label_menu)
+        self.settings_menu.add_cascade(label="Linux Command", menu=self.linux_menu)
 
         self.refresh_printer_menus()
 
@@ -104,6 +109,7 @@ class PexApp(tk.Tk):
         printers = printer.get_printers()
         self.file_var = tk.StringVar(value=pexconfig.get_file_printer())
         self.label_var = tk.StringVar(value=pexconfig.get_label_printer())
+        self.linux_cmd = tk.StringVar(value=pexconfig.get_linux_command())
 
         # File-Printer
         self.file_menu.delete(0, tk.END)
@@ -137,11 +143,35 @@ class PexApp(tk.Tk):
                 command=self.set_label_printer
             )
 
+        # Linux Command
+        self.linux_menu.delete(0, tk.END)
+        self.linux_menu.add_radiobutton(
+            label="-n",
+            variable=self.linux_cmd,
+            value="-n",
+            command=self.set_linux_command
+        )
+        self.linux_menu.add_radiobutton(
+            label="-o copies",
+            variable=self.linux_cmd,
+            value="-o",
+            command=self.set_linux_command
+        )
+        self.linux_menu.add_radiobutton(
+            label="for loop",
+            variable=self.linux_cmd,
+            value="for",
+            command=self.set_linux_command
+        )
+
     def set_file_printer(self):
         pexconfig.set_file_printer(self.file_var.get())
 
     def set_label_printer(self):
         pexconfig.set_label_printer(self.label_var.get())
+
+    def set_linux_command(self):
+        pexconfig.set_linux_command(self.linux_cmd.get())
 
     def update(self):
         try:
