@@ -1,7 +1,7 @@
 import sys
 from importlib import import_module
 
-_impl_name = "service_windows" if sys.platform == "win32" else "service_linux"
+_impl_name = "pex.services.service_windows" if sys.platform == "win32" else "pex.services.service_linux"
 _impl = import_module(_impl_name)
 
 

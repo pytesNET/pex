@@ -1,6 +1,22 @@
 PEX - Changelog
 ===============
 
+## Version 0.4.0 (Beta)
+- Info: New project / folder structure including `pyproject.toml`.
+- Add: New `get_option`, `set_option`, `delete_option` functions instead of per-config ones.
+- Add: New CLI interface for interacting with PEX.
+- Add: New `utils.py` runtime utility functions.
+- Add: New experimental method to check when a printer job is done, to prevent spooler / queue errors.
+- Add: Using threading to improve UI performance.
+- Update: Renamed HTTP server routes, using `/pex` as prefix.
+- Update: More-common / general-use `print_file` / `print_label` function structures.
+- Update: Fix pathing due to new folder structure.
+- Update: Clean up all project files and source code.
+- Update: Allow declaring as many printers as desired + one default printer.
+- Update: Minor changes on the tk desktop UI.
+- Fix: Experimental fix for spooler / printer queue failures (stuck documents, mostly on windows systems).
+- Remove: flask-cors / pdfplumber dependencies.
+
 ## Version 0.3.1 (Beta)
 - Add: New option to change linux printing utility command.
 - Fix: Linux printing utility command.

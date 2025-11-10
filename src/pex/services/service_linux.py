@@ -2,23 +2,20 @@ import json
 import locale
 import os
 import subprocess
-import sys
+from pathlib import Path
 from typing import Tuple
 
 SERVICE_NAME = "PrinterService"
-
-LINUX = sys.platform.startswith("linux")
-ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
-SERVER_PATH = os.path.join(ROOT_PATH, "server.py")
-TEMP_PATH = os.path.join(ROOT_PATH, "temp")
-TEMP_ERR_FILE = os.path.join(TEMP_PATH, "error.log")
-TEMP_SCC_FILE = os.path.join(TEMP_PATH, "out.log")
-
-VENV_PATH = os.path.join(ROOT_PATH, ".venv")
-PYTHON_PATH = os.path.join(VENV_PATH, "bin", "python")
+ENCODING = locale.getpreferredencoding(False) or "utf-8"
 PM2_CMD = os.environ.get("PM2_PATH", "pm2")
 
-ENCODING = locale.getpreferredencoding(False) or "utf-8"
+ROOT_PATH = Path(__file__).resolve().parents[3]
+VENV_PATH = ROOT_PATH / ".venv"
+PYTHON_PATH = VENV_PATH / "bin" / "python"
+SERVER_PATH = Path(__file__).resolve() / "server.py"
+TEMP_PATH = ROOT_PATH / "temp"
+TEMP_ERR_FILE = TEMP_PATH / "error.log"
+TEMP_OUT_FILE = TEMP_PATH / "out.log"
 
 
 def _run(cmd: list[str], timeout: int = 30) -> Tuple[bool, str]:
