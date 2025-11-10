@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PEX"
+version = "0.4.0"
+description = "Printer Execution Service"
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.scripts]
+pex = "pex.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
