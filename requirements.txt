@@ -1,6 +1,0 @@
-flask
-pandas
-Pillow
-pywin32; sys_platform == "win32"
-reportlab
-tabula-py
