@@ -21,7 +21,7 @@ interface or the provided tk application.
 
 1. Clone this repository
 ```sh
-git clone https://www.github.com/pytesNET/pex pex
+git clone https://www.github.com/pytesNET/pex
 ```
 
 2. Create a virtual environment
