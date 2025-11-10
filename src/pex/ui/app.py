@@ -20,6 +20,12 @@ def resource_path(name: str) -> str:
 class PexApp(tk.Tk):
     def __init__(self):
         super().__init__()
+        self._last_installed = False
+        self._last_running = False
+        self._exec_inflight = False
+        self._poll_inflight = False
+        self._stopped = False
+
         self.btn_install = None
         self.btn_uninstall = None
         self.btn_spooler = None
@@ -41,9 +47,6 @@ class PexApp(tk.Tk):
         self._set_icon()
         self.setup_ui()
         self.create_menu()
-
-        self._poll_inflight = False
-        self._stopped = False
         self.auto_refresh()
 
     def destroy(self):
@@ -74,8 +77,8 @@ class PexApp(tk.Tk):
         shared = {"width": 14, "state": "disabled"}
         self.btn_install = ttk.Button(frame, text="Install", command=lambda: self.exec(service.install), **shared)
         self.btn_uninstall = ttk.Button(frame, text="Uninstall", command=lambda: self.exec(service.uninstall), **shared)
-        self.btn_spooler = ttk.Button(frame, text="Restart Spooler", command=lambda: self.exec(self.update), width=32, state="disabled")
-        self.btn_update = ttk.Button(frame, text="Update PEX", command=lambda: self.exec(self.update), **shared)
+        self.btn_spooler = ttk.Button(frame, text="Restart Spooler", command=lambda: self.exec(self._cmd_restart_spooler), width=32, state="disabled")
+        self.btn_update = ttk.Button(frame, text="Update PEX", command=lambda: self.exec(self._cmd_update), **shared)
         self.btn_start = ttk.Button(frame, text="Start", command=lambda: self.exec(service.start), **shared)
         self.btn_stop = ttk.Button(frame, text="Stop", command=lambda: self.exec(service.stop), **shared)
         self.btn_restart = ttk.Button(frame, text="Restart", command=lambda: self.exec(service.restart), **shared)
@@ -111,35 +114,126 @@ class PexApp(tk.Tk):
             label="-n",
             variable=self.linux_cmd,
             value="-n",
-            command=self.set_linux_command
+            command=lambda: config.set_option('linux_command', self.linux_cmd.get())
         )
         self.linux_menu.add_radiobutton(
             label="-o copies",
             variable=self.linux_cmd,
             value="-o",
-            command=self.set_linux_command
+            command=lambda: config.set_option('linux_command', self.linux_cmd.get())
         )
         self.linux_menu.add_radiobutton(
             label="for loop",
             variable=self.linux_cmd,
             value="for",
-            command=self.set_linux_command
+            command=lambda: config.set_option('linux_command', self.linux_cmd.get())
         )
 
     def open_printers_editor(self):
         from pex.ui.printers_editor import PrintersEditor
         PrintersEditor(self)
 
-    def set_linux_command(self):
-        config.set_option('linux_command', self.linux_cmd.get())
+    def _cmd_restart_spooler(self):
+        script_name = "restart_spooler.bat"
+        script_path = Path(__file__).resolve().parents[3] / "scripts" / script_name
 
-    def update(self):
+        if not script_path.exists():
+            return False, f"Script not found: {script_path}"
+
+        self._exec_inflight = True
+        self.log("Restarting Printer Spooler, please wait...")
         try:
-            result = subprocess.check_output(['git', 'pull'], stderr=subprocess.STDOUT, text=True)
-            service.restart()
-            return True, result.strip()
+            proc = subprocess.run(
+                ["cmd", "/c", str(script_path)],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            out = (proc.stdout or "").strip()
+            err = (proc.stderr or "").strip()
+
+            if proc.returncode == 0:
+                return True, out or f"{script_name} executed successfully."
+            else:
+                msg = (out + ("\n" + err if err else "")).strip() or f"{script_name} failed (exit {proc.returncode})"
+                return False, msg
         except subprocess.CalledProcessError as e:
             return False, e.output.strip()
+        except subprocess.TimeoutExpired:
+            return False, f"{script_name} timed out after 15 seconds".strip()
+        except Exception as e:
+            return False, str(e).strip()
+        finally:
+            self._exec_inflight = False
+
+    def _cmd_update(self):
+        self._exec_inflight = True
+        self.log("Updating PEX, please wait...")
+
+        logs = []
+        success = True
+        try:
+            # Check current state
+            try:
+                installed = service.is_installed()
+                running = service.is_running() if installed else False
+            except Exception as e:
+                installed, running = False, False
+                logs.append(f"[ERROR] Could not read service status: {e}")
+
+            # Stop service
+            if installed and running:
+                logs.append("[INFO] Stopping service...")
+                status, msg = service.stop()
+                if status:
+                    logs.append(f"[SUCCESS] Service successfully stopped")
+                else:
+                    logs.append(f"[ERROR] {msg}")
+
+            # Update
+            logs.append("[INFO] Pulling latest changes from git...")
+            try:
+                res = subprocess.run(['git', 'pull'], capture_output=True, text=True, timeout=120)
+                if res.stdout:
+                    logs.append(res.stdout.strip())
+                if res.stderr:
+                    logs.append(res.stderr.strip())
+                if res.returncode != 0:
+                    success = False
+                    logs.append(f"[ERROR] git pull failed with exit code {res.returncode}")
+            except subprocess.TimeoutExpired:
+                success = False
+                logs.append("[ERROR] git pull timed out")
+
+            # Start service
+            if installed and running and success:
+                logs.append("[INFO] Starting service...")
+                status, msg = service.start()
+                if status:
+                    logs.append(f"[SUCCESS] Service successfully started")
+                else:
+                    logs.append(f"[ERROR] {msg}")
+
+            # Return
+            message = "\n".join(l for l in logs if l)
+            return success, message
+        except subprocess.CalledProcessError as e:
+            return False, "\n".join(logs + [f"[EXCEPTION] {e.output.strip()}"])
+        except Exception as e:
+            return False, "\n".join(logs + [f"[EXCEPTION] {e}"])
+        finally:
+            self._exec_inflight = False
+
+    def exec(self, fn: Callable):
+        self._disable_buttons()
+
+        def worker():
+            try:
+                result = fn()
+            except Exception as e:
+                result = False, str(e)
+            self.after(0, lambda: (self.log(result), self.refresh_buttons()))
+        threading.Thread(target=worker, daemon=True).start()
 
     def log(self, output):
         self.output_text.config(state='normal')
@@ -156,14 +250,41 @@ class PexApp(tk.Tk):
             self.output_text.insert(tk.END, str(output))
         self.output_text.config(state='disabled')
 
-    def exec(self, fn: Callable):
-        def worker():
-            try:
-                result = fn()
-            except Exception as e:
-                result = (False, str(e))
-            self.after(0, lambda: (self.log(result), self.refresh_buttons()))
-        threading.Thread(target=worker, daemon=True).start()
+    def _disable_buttons(self):
+        self.btn_install.config(state='disabled')
+        self.btn_uninstall.config(state='disabled')
+        self.btn_spooler.config(state='disabled')
+        self.btn_update.config(state='disabled')
+        self.btn_start.config(state='disabled')
+        self.btn_stop.config(state='disabled')
+        self.btn_restart.config(state='disabled')
+        self.btn_status.config(state='disabled')
+        self.btn_exit.config(state='disabled')
+
+    def _refresh_states(self, installed: bool, running: bool):
+        if self._stopped:
+            return
+
+        self._last_installed = installed
+        self._last_running = running
+
+        if not self._poll_inflight and not self._exec_inflight:
+            self.btn_install.config(state='normal' if not installed else 'disabled')
+            self.btn_uninstall.config(state='normal' if installed and not running else 'disabled')
+            self.btn_spooler.config(state='normal' if sys.platform == 'win32' else 'disabled')
+            self.btn_update.config(state='normal')
+            self.btn_start.config(state='normal' if installed and not running else 'disabled')
+            self.btn_stop.config(state='normal' if installed and running else 'disabled')
+            self.btn_restart.config(state='normal' if installed and running else 'disabled')
+            self.btn_status.config(state='normal' if installed else 'disabled')
+            self.btn_exit.config(state='normal')
+
+        if self.loading:
+            self.output_text.config(state='normal')
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.insert(tk.END, "[READY] Application is ready to be used...")
+            self.output_text.config(state='disabled')
+            self.loading = False
 
     def refresh_buttons(self):
         if self._poll_inflight:
@@ -181,30 +302,12 @@ class PexApp(tk.Tk):
                 msg = None
 
             def apply():
-                if self._stopped:
-                    return
-
-                self.btn_install.config(state='normal' if not installed else 'disabled')
-                self.btn_uninstall.config(state='normal' if installed and not running else 'disabled')
-                self.btn_spooler.config(state='normal' if sys.platform == 'win32' else 'disabled')
-                self.btn_update.config(state='normal')
-                self.btn_start.config(state='normal' if installed and not running else 'disabled')
-                self.btn_stop.config(state='normal' if installed and running else 'disabled')
-                self.btn_restart.config(state='normal' if installed and running else 'disabled')
-                self.btn_status.config(state='normal' if installed else 'disabled')
-                self.btn_exit.config(state='normal')
-
-                if self.loading:
-                    self.output_text.config(state='normal')
-                    self.output_text.delete(1.0, tk.END)
-                    self.output_text.insert(tk.END, "[READY] Application is ready to be used...")
-                    self.output_text.config(state='disabled')
-                    self.loading = False
+                self._poll_inflight = False
+                self._refresh_states(installed, running)
                 if msg:
                     self.output_text.config(state='normal')
                     self.output_text.insert(tk.END, "\n" + msg)
                     self.output_text.config(state='disabled')
-                self._poll_inflight = False
 
             self.after(0, apply)
         threading.Thread(target=worker, daemon=True).start()
@@ -215,17 +318,32 @@ class PexApp(tk.Tk):
             self.after(3000, self.auto_refresh)
 
 
-def ensure_admin():
-    if os.name == "nt" and "--admin" in sys.argv and not ctypes.windll.shell32.IsUserAnAdmin():
-        new_args = [arg for arg in sys.argv if arg != "--admin"]
-        ctypes.windll.shell32.ShellExecuteW(
-            None, "runas", sys.executable, " ".join(['"{}"'.format(arg) for arg in new_args]), None, 1
-        )
-        sys.exit()
+def ensure_admin(force_admin: bool):
+    if os.name != "nt" or not force_admin:
+        return
+
+    try:
+        if ctypes.windll.shell32.IsUserAnAdmin():
+            return
+    except Exception:
+        pass
+
+    argv = [a for a in sys.argv[1:] if a != "--admin"]
+    script = Path(sys.argv[0])
+    if script.exists():
+        params = subprocess.list2cmdline([str(script), *argv])
+    else:
+        params = subprocess.list2cmdline(["-m", "pex", *argv])
+
+    ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, params, None, 1)
+    if ret <= 32:
+        raise RuntimeError(f"Elevation failed with code {ret}")
+    os.abort()
 
 
-def run():
-    ensure_admin()
+def run(force_admin: bool | None = None):
+    force_admin = ("--admin" in sys.argv) if force_admin is None else force_admin
+    ensure_admin(force_admin)
     app = PexApp()
     app.mainloop()
 

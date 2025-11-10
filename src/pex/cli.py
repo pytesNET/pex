@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 from typing import Callable
 from .ui import app
 from .config import get_option, set_option, delete_option
@@ -53,11 +54,55 @@ def _cmd_stop(_: argparse.Namespace) -> int:
 
 
 def _cmd_ui(_: argparse.Namespace) -> int:
-    return _wrap_noop(app.run)
+    return _wrap_noop(lambda: app.run(True))
 
 
-def _cmd_update(args: argparse.Namespace) -> int:
-    return 2
+def _cmd_update(_: argparse.Namespace) -> int:
+    try:
+        try:
+            installed = service.is_installed()
+            running = service.is_running() if installed else False
+        except Exception as e:
+            installed, running = False, False
+            print(f"[ERROR] Could not read service status: {e}")
+
+        # Stop service
+        if installed and running:
+            print("[INFO] Stopping service...")
+            status, msg = service.stop()
+            if status:
+                print(f"[SUCCESS] Service successfully stopped")
+            else:
+                print(f"[ERROR] {msg}")
+
+        # Update
+        print("[INFO] Pulling latest changes from git...")
+        try:
+            res = subprocess.run(['git', 'pull'], capture_output=True, text=True, timeout=120)
+            if res.stdout:
+                print(res.stdout.strip())
+            if res.stderr:
+                print(res.stderr.strip())
+            if res.returncode != 0:
+                success = False
+                print(f"[ERROR] git pull failed with exit code {res.returncode}")
+        except subprocess.TimeoutExpired:
+            success = False
+            print("[ERROR] git pull timed out")
+
+        # Start service
+        if installed and running and success:
+            print("[INFO] Starting service...")
+            status, msg = service.start()
+            if status:
+                print(f"[SUCCESS] Service successfully started")
+            else:
+                print(f"[ERROR] {msg}")
+    except subprocess.CalledProcessError as e:
+        print(f"[EXCEPTION] {e.output.strip()}")
+    except Exception as e:
+        print(f"[EXCEPTION] {e}")
+    return 0 if success else 1
 
 
 def _cmd_config(args: argparse.Namespace) -> int:
