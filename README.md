@@ -178,4 +178,8 @@ Either `file` or `lines` must be provided — not both.
 
 ## License
 Published under the MIT License \
-Copyright © 2023 - 2025 pytesNET sam@pytes.net
+Copyright © 2023 - 2025 pytesNET <sam@pytes.net>
+
+This project uses and includes
+- `nssm` for non-sucking service management on windows, which is licensed under [Public Domain](https://git.nssm.cc/nssm/nssm/src/master/README.txt)
+- `SumatraPDF` for PDF printing on windows, which is licensed under [GNU GPLv3](https://github.com/sumatrapdfreader/sumatrapdf/blob/master/COPYING) (and includes components under BSD-style licenses).
