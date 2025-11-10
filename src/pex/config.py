@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 from .utils import deep_get, deep_set, deep_delete
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-CONFIG_FILE = (ROOT_DIR / "config.json")
-DEFAULT_CONFIG_FILE = (ROOT_DIR / "_default_config.json")
-LEGACY_CONFIG_FILE = (ROOT_DIR / "pexconfig.json")
+ROOT_PATH = Path(__file__).resolve().parents[2]
+CONFIG_FILE = (ROOT_PATH / "config.json")
+DEFAULT_CONFIG_FILE = (ROOT_PATH / "_default_config.json")
+LEGACY_CONFIG_FILE = (ROOT_PATH / "pexconfig.json")
 
 
 def _default_config():

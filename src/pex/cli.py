@@ -22,6 +22,12 @@ def _cmd_help(_: argparse.Namespace) -> int:
     return _wrap_noop(build_parser().print_help)
 
 
+def _cmd_run(_: argparse.Namespace) -> int:
+    from .services import server
+    server.run()
+    return 0
+
+
 def _cmd_install(_: argparse.Namespace) -> int:
     return _wrap_service(service.install)
 
@@ -103,6 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("restart", help="Restart the printer service").set_defaults(func=_cmd_restart)
     sub.add_parser("stop", help="Stop the printer service").set_defaults(func=_cmd_stop)
     sub.add_parser("update", help="Update PEX").set_defaults(func=_cmd_update)
+    sub.add_parser("run", help="Run FLASK Server without service").set_defaults(func=_cmd_run)
     cmd = sub.add_parser(
         "config",
         help="Get or Set a config value",

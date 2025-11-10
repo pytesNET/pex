@@ -1,14 +1,15 @@
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify
+from pathlib import Path
 from . import printer
 from .. import config
 from ..version import __NAME__, __VERSION__
 
 app = Flask(__name__)
 
-ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
-TEMP_PATH = os.path.join(ROOT_PATH, "temp")
+ROOT_PATH = Path(__file__).resolve().parents[3]
+TEMP_PATH = ROOT_PATH / "temp"
 os.makedirs(TEMP_PATH, exist_ok=True)
 
 
@@ -50,7 +51,8 @@ def _get_status():
         'version': __VERSION__,
         'config': {
             'formats': config.get_option('formats'),
-            'printers': config.get_option('printers')
+            'printers': config.get_option('printers'),
+            'printer_default': config.get_option('printer_default'),
         },
         'printers': printer.list_printers()
     })
@@ -59,13 +61,19 @@ def _get_status():
 @app.route('/pex/printers', methods=['GET'])
 def _get_printers():
     printers = printer.list_printers()
-    return response_success(printers)
+    printer_default = config.get_option('printer_default')
+    if isinstance(printer_default, str):
+        printer_default = printer.resolve_printer_name(printer_default)
+    return response_success({
+        'printers': printers,
+        'printer_default': printer_default,
+    })
 
 
 @app.route('/pex/print', methods=['POST'])
 def _post_print():
     printer_name = request.form.get('printer', config.get_option('printer_default'))
-    paper_format = request.form.get('format')
+    paper_format = request.form.get('format', "A4")
     orientation = request.form.get('orientation', 'portrait')
     quantity = int(request.form.get('quantity', 1))
 
@@ -116,5 +124,9 @@ def _post_print():
         return response_error("You need to either pass a file or the desired lines to print.", request.form)
 
 
-if __name__ == "__main__":
+def run():
     app.run(debug=True, host=config.get_option("server.host"), port=config.get_option("server.port"))
+
+
+if __name__ == "__main__":
+    run()
