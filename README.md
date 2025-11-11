@@ -178,7 +178,7 @@ Either `file` or `lines` must be provided — not both.
 
 ## License
 Published under the MIT License \
-Copyright © 2023 - 2025 pytesNET <sam@pytes.net>
+Copyright © 2024 - 2026 pytesNET <sam@pytes.net>
 
 This project uses and includes
 - `nssm` for non-sucking service management on windows, which is licensed under [Public Domain](https://git.nssm.cc/nssm/nssm/src/master/README.txt)
