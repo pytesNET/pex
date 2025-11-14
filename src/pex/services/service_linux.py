@@ -125,7 +125,7 @@ def install():
     os.makedirs(TEMP_PATH, exist_ok=True)
 
     cmd = [
-        PM2_CMD, "start", PEX_PATH, "run"
+        PM2_CMD, "start", PEX_PATH, "run",
         "--name", __SERVICE_NAME__,
         "--output", TEMP_OUT_FILE,
         "--error", TEMP_ERR_FILE,
