@@ -223,7 +223,7 @@ def _win32_wait_for_spool(
         time.sleep(interval)
 
 
-def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orientation: str, quantity: int, additional: dict|None = None):
+def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orientation: str, quantity: int, additional: list|None = None):
     print_defaults = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
     handle = win32print.OpenPrinter(printer, print_defaults)
     try:
@@ -328,7 +328,10 @@ def print_file(
     quantity = 1 if quantity <= 1 else quantity
 
     if sys.platform == "win32":
-        _print_on_windows(filepath, printer, fmt, orientation, quantity)
+        settings = []
+        if isinstance(paper_format, str):
+            settings.append(f"paper={paper_format}")
+        _print_on_windows(filepath, printer, fmt, orientation, quantity, settings)
     else:
         _print_on_linux(filepath, printer, fmt, orientation, quantity)
 
