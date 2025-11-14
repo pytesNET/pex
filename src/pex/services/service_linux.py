@@ -11,6 +11,7 @@ PM2_CMD = os.environ.get("PM2_PATH", "pm2")
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
 VENV_PATH = ROOT_PATH / ".venv"
+PYTHON_PATH = VENV_PATH / "bin" / "python"
 PEX_PATH = VENV_PATH / "bin" / "pex"
 TEMP_PATH = ROOT_PATH / "temp"
 TEMP_ERR_FILE = TEMP_PATH / "error.log"
@@ -125,10 +126,12 @@ def install():
     os.makedirs(TEMP_PATH, exist_ok=True)
 
     cmd = [
-        PM2_CMD, "start", PEX_PATH, "run",
+        PM2_CMD, "start", PEX_PATH,
         "--name", __SERVICE_NAME__,
+        "--interpreter", PYTHON_PATH,
         "--output", TEMP_OUT_FILE,
         "--error", TEMP_ERR_FILE,
+        "--", "run"
     ]
 
     ok, out = _run(cmd)
