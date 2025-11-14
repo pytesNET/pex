@@ -223,7 +223,7 @@ def _win32_wait_for_spool(
         time.sleep(interval)
 
 
-def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orientation: str, quantity: int):
+def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orientation: str, quantity: int, additional: dict|None = None):
     print_defaults = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
     handle = win32print.OpenPrinter(printer, print_defaults)
     try:
@@ -243,6 +243,9 @@ def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orienta
     settings = f"noscale,{orientation}"
     if quantity > 1:
         settings += f",copies={quantity}"
+    if additional is not None:
+        for val in additional:
+            settings += f",{val}"
 
     subprocess.run([
         sumatra_path,
@@ -384,6 +387,9 @@ def print_lines(
 
     # Print
     if sys.platform == "win32":
-        _print_on_windows(filepath, printer, fmt, orientation, quantity)
+        settings = []
+        if isinstance(paper_format, str):
+            settings.append(f"paper={paper_format}")
+        _print_on_windows(filepath, printer, fmt, orientation, quantity, settings)
     else:
         _print_on_linux(filepath, printer, fmt, orientation, quantity)
