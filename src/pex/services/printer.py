@@ -16,6 +16,8 @@ if sys.platform == "win32":
     import win32print
 
 JOB_STATUS_SPOOLING = 0x0008
+PRINTER_ORIENT_PORTRAIT = 1
+PRINTER_ORIENT_LANDSCAPE = 2
 
 
 def _get_sumatra_path() -> str:
@@ -231,7 +233,7 @@ def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orienta
         attributes = win32print.GetPrinter(handle, level)
         attributes['pDevMode'].PaperWidth = fmt[0] * 10
         attributes['pDevMode'].PaperLength = fmt[1] * 10
-        attributes['pDevMode'].Orientation = 1 if fmt[0] > fmt[1] else 2
+        attributes['pDevMode'].Orientation = PRINTER_ORIENT_LANDSCAPE if fmt[0] > fmt[1] else PRINTER_ORIENT_PORTRAIT
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
     finally:
