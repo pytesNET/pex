@@ -1,8 +1,12 @@
 @echo off
 setlocal
+
 cd /d "%~dp0\.."
-call .venv\Scripts\python.exe src\pex\__main__.py --admin %*
+call .venv\Scripts\activate
+pex ui %*
+
 echo.
 echo [ENDE]
-pause
+#pause
 endlocal
+exit /b %CODE%
