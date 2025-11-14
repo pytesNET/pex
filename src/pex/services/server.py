@@ -6,6 +6,7 @@ from waitress import serve
 from . import printer
 from .. import config
 from ..version import __NAME__, __VERSION__
+from ..utils import is_int
 
 app = Flask(__name__)
 
@@ -74,9 +75,20 @@ def _get_printers():
 @app.route('/pex/print', methods=['POST'])
 def _post_print():
     printer_name = request.form.get('printer', config.get_option('printer_default'))
-    paper_format = request.form.get('format', "A4")
     orientation = request.form.get('orientation', 'portrait')
     quantity = int(request.form.get('quantity', 1))
+
+    # Format "paper_format"
+    formats = request.form.getlist('format')
+    if not formats:
+        paper_format = "A4"
+    else:
+        if len(formats) == 1 and not is_int(formats[0]):
+            paper_format = formats[0]
+        elif len(formats) >= 2 and is_int(formats[0]) and is_int(formats[1]):
+            paper_format = [int(f) for f in formats]
+        else:
+            paper_format = formats[0]
 
     if 'file' in request.files:
         file = request.files['file']
@@ -101,8 +113,7 @@ def _post_print():
         except Exception as e:
             return response_error(str(e))
     elif 'lines' in request.form:
-        raw = request.form.get('lines', '')
-        lines = raw.splitlines() if isinstance(raw, str) else list(raw)
+        lines = request.form.getlist('lines')
         try:
             args = {
                 "lines": lines,

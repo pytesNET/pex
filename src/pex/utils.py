@@ -106,3 +106,11 @@ def deep_delete(data, path: str) -> bool:
         del current[last]
         return True
     return False
+
+
+def is_int(value):
+    try:
+        int(value)
+        return True
+    except (ValueError, TypeError):
+        return False
