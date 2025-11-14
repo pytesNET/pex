@@ -11,8 +11,7 @@ PM2_CMD = os.environ.get("PM2_PATH", "pm2")
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
 VENV_PATH = ROOT_PATH / ".venv"
-PYTHON_PATH = VENV_PATH / "bin" / "python"
-SERVER_PATH = Path(__file__).resolve() / "server.py"
+PEX_PATH = VENV_PATH / "bin" / "pex"
 TEMP_PATH = ROOT_PATH / "temp"
 TEMP_ERR_FILE = TEMP_PATH / "error.log"
 TEMP_OUT_FILE = TEMP_PATH / "out.log"
@@ -123,25 +122,13 @@ def install():
     if not ok:
         return False, info
 
-    if not os.path.exists(PYTHON_PATH):
-        return False, f"Python path not found: {PYTHON_PATH}"
-    if not os.path.exists(SERVER_PATH):
-        return False, f"server.py not found: {SERVER_PATH}"
-
     os.makedirs(TEMP_PATH, exist_ok=True)
 
     cmd = [
-        PM2_CMD,
-        "start",
-        SERVER_PATH,
-        "--interpreter",
-        PYTHON_PATH,
-        "--name",
-        __SERVICE_NAME__,
-        "--output",
-        TEMP_OUT_FILE,
-        "--error",
-        TEMP_ERR_FILE,
+        PM2_CMD, "start", PEX_PATH, "run"
+        "--name", __SERVICE_NAME__,
+        "--output", TEMP_OUT_FILE,
+        "--error", TEMP_ERR_FILE,
     ]
 
     ok, out = _run(cmd)
