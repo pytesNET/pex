@@ -231,7 +231,7 @@ def _print_on_windows(filepath: str, printer: str, fmt: Tuple[int, int], orienta
         attributes = win32print.GetPrinter(handle, level)
         attributes['pDevMode'].PaperWidth = fmt[0] * 10
         attributes['pDevMode'].PaperLength = fmt[1] * 10
-        attributes['pDevMode'].Orientation = 1 if orientation == 'portrait' else 2
+        attributes['pDevMode'].Orientation = 1 if fmt[0] > fmt[1] else 2
         attributes['pDevMode'].Copies = quantity
         win32print.SetPrinter(handle, level, attributes, 0)
     finally:
