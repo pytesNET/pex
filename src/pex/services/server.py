@@ -86,14 +86,14 @@ def _post_print():
         file.save(filepath)
 
         try:
-            args = (
-                filepath,
-                printer_name,
-                paper_format,
-                orientation,
-                quantity,
-            )
-            printer.print_file(*args)
+            args = {
+                "filepath": filepath,
+                "printer_name": printer_name,
+                "paper_format": paper_format,
+                "orientation": orientation,
+                "quantity": quantity,
+            }
+            printer.print_file(**args)
             return response_success({
                 "message": "The file has been successfully printed.",
                 "arguments": args
@@ -104,17 +104,17 @@ def _post_print():
         raw = request.form.get('lines', '')
         lines = raw.splitlines() if isinstance(raw, str) else list(raw)
         try:
-            args = (
-                lines,
-                printer_name,
-                paper_format,
-                orientation,
-                quantity,
-                request.form.get('font_name', None),
-                int(request.form.get('font_size', 10)),
-                int(request.form.get('line_height', 12)),
-            )
-            printer.print_lines(*args)
+            args = {
+                "lines": lines,
+                "printer_name": printer_name,
+                "paper_format": paper_format,
+                "orientation": orientation,
+                "quantity": quantity,
+                "font_name": request.form.get('font_name', None),
+                "font_size": int(request.form.get('font_size', 10)),
+                "line_height": int(request.form.get('line_height', 12)),
+            }
+            printer.print_lines(**args)
             return response_success({
                 "message": "The label has been successfully printed.",
                 "arguments": args
