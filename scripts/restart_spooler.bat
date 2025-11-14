@@ -1,4 +1,4 @@
 @echo off
-net stop spooler
+net stop spooler /y
 del /Q /F %systemroot%\System32\spool\PRINTERS\*
 net start spooler
