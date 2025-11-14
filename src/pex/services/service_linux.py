@@ -4,8 +4,8 @@ import os
 import subprocess
 from pathlib import Path
 from typing import Tuple
+from ..version import __SERVICE_NAME__
 
-SERVICE_NAME = "PrinterService"
 ENCODING = locale.getpreferredencoding(False) or "utf-8"
 PM2_CMD = os.environ.get("PM2_PATH", "pm2")
 
@@ -39,7 +39,7 @@ def _run(cmd: list[str], timeout: int = 30) -> Tuple[bool, str]:
 def _ensure_pm2() -> Tuple[bool, str]:
     ok, out = _run([PM2_CMD, "-v"])
     if not ok:
-        return False, f"pm2 nicht gefunden oder nicht ausführbar (PM2_PATH='{PM2_CMD}'). Details:\n{out}"
+        return False, f"pm2 could not be found (PM2_PATH='{PM2_CMD}'). Details:\n{out}"
     return True, out
 
 
@@ -51,7 +51,7 @@ def _jlist() -> Tuple[bool, list]:
         data = json.loads(out or "[]")
         return True, data
     except Exception as exc:
-        return False, [f"Fehler beim Parsen von pm2 jlist: {exc}\nRaw: {out}"]
+        return False, [f"Error during parsing of pm2 jlist : {exc}\nRaw: {out}"]
 
 
 def _find_proc_by_name(name: str):
@@ -71,51 +71,50 @@ def start():
     ok, _ = _ensure_pm2()
     if not ok:
         return _
-    return _run([PM2_CMD, "start", SERVICE_NAME])
+    return _run([PM2_CMD, "start", __SERVICE_NAME__])
 
 
 def stop():
     ok, _ = _ensure_pm2()
     if not ok:
         return _
-    return _run([PM2_CMD, "stop", SERVICE_NAME])
+    return _run([PM2_CMD, "stop", __SERVICE_NAME__])
 
 
 def restart():
     ok, _ = _ensure_pm2()
     if not ok:
         return _
-    return _run([PM2_CMD, "restart", SERVICE_NAME])
+    return _run([PM2_CMD, "restart", __SERVICE_NAME__])
 
 
 def status():
     ok, _ = _ensure_pm2()
     if not ok:
         return _
-    proc = _find_proc_by_name(SERVICE_NAME)
+    proc = _find_proc_by_name(__SERVICE_NAME__)
     if not proc:
-        return False, f"Service {SERVICE_NAME} ist nicht installiert."
+        return False, f"Service {__SERVICE_NAME__} could not be installed."
     status = proc.get("pm2_env", {}).get("status")
     pid = proc.get("pid")
-    return True, f"{SERVICE_NAME}: {status} (pid={pid})"
+    return True, f"{__SERVICE_NAME__}: {status} (pid={pid})"
 
 
 def is_installed():
     ok, _ = _ensure_pm2()
     if not ok:
         return False
-    return _find_proc_by_name(SERVICE_NAME) is not None
+    return _find_proc_by_name(__SERVICE_NAME__) is not None
 
 
 def is_running():
     ok, _ = _ensure_pm2()
     if not ok:
         return False
-    proc = _find_proc_by_name(SERVICE_NAME)
+    proc = _find_proc_by_name(__SERVICE_NAME__)
     if not proc:
         return False
     status = proc.get("pm2_env", {}).get("status")
-    # pm2 Statuswerte: "online", "stopped", "errored", ...
     return status == "online"
 
 
@@ -125,9 +124,9 @@ def install():
         return False, info
 
     if not os.path.exists(PYTHON_PATH):
-        return False, f"Python nicht gefunden: {PYTHON_PATH}"
+        return False, f"Python path not found: {PYTHON_PATH}"
     if not os.path.exists(SERVER_PATH):
-        return False, f"server.py nicht gefunden: {SERVER_PATH}"
+        return False, f"server.py not found: {SERVER_PATH}"
 
     os.makedirs(TEMP_PATH, exist_ok=True)
 
@@ -138,9 +137,9 @@ def install():
         "--interpreter",
         PYTHON_PATH,
         "--name",
-        SERVICE_NAME,
+        __SERVICE_NAME__,
         "--output",
-        TEMP_SCC_FILE,
+        TEMP_OUT_FILE,
         "--error",
         TEMP_ERR_FILE,
     ]
@@ -150,7 +149,7 @@ def install():
         return False, out
 
     _run([PM2_CMD, "save"])
-    return True, f"Service {SERVICE_NAME} installiert (pm2)."
+    return True, f"Service {__SERVICE_NAME__} successfully installed (pm2)."
 
 
 def uninstall():
@@ -158,9 +157,9 @@ def uninstall():
     if not ok:
         return False, info
 
-    ok, out = _run([PM2_CMD, "delete", SERVICE_NAME])
+    ok, out = _run([PM2_CMD, "delete", __SERVICE_NAME__])
     if not ok:
         return False, out
 
     _run([PM2_CMD, "save"])
-    return True, f"Service {SERVICE_NAME} wurde entfernt."
+    return True, f"Service {__SERVICE_NAME__} successfully removed."

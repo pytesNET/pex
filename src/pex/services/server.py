@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from flask import Flask, request, jsonify
 from pathlib import Path
+from waitress import serve
 from . import printer
 from .. import config
 from ..version import __NAME__, __VERSION__
@@ -125,7 +126,24 @@ def _post_print():
 
 
 def run():
-    app.run(debug=True, host=config.get_option("server.host"), port=config.get_option("server.port"))
+    host = config.get_option("server.host") or "0.0.0.0"
+    port = int(config.get_option("server.port") or 4422)
+    threads = int(config.get_option("server.threads") or 4)
+    backlog = int(config.get_option("server.backlog") or 128)
+    channel_timeout = int(config.get_option("server.timeout") or 30)
+
+    try:
+        serve(
+            app,
+            host=host,
+            port=port,
+            threads=threads,
+            backlog=backlog,
+            channel_timeout=channel_timeout,
+            ident=f"PEX/{__VERSION__}"
+        )
+    except ImportError:
+        app.run(debug=True, host=config.get_option("server.host"), port=config.get_option("server.port"))
 
 
 if __name__ == "__main__":
