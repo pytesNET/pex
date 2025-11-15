@@ -107,7 +107,7 @@ class PexApp(tk.Tk):
         self.settings_menu = tk.Menu(self.menubar, tearoff=0)
         self.linux_menu = tk.Menu(self.settings_menu, tearoff=0)
 
-        self.menubar.add_cascade(label="Printers", command=self.open_printers_editor)
+        self.menubar.add_command(label="Printers", command=self.open_printers_editor)
         self.menubar.add_cascade(label="Settings", menu=self.settings_menu)
         self.settings_menu.add_cascade(label="Linux Command", menu=self.linux_menu)
         self.linux_menu.add_radiobutton(
