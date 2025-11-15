@@ -2,7 +2,9 @@ PEX - Changelog
 ===============
 
 ## Version 0.4.1 (Beta)
+- Update: Clean up server.py arguments dictionary.
 - Fix: Using `add_cascade` instead of `add_command` (which still worked on windows though).
+- Fix: `_set_icon` did not set the desired icon correctly.
 
 ## Version 0.4.0 (Beta)
 - Info: New project / folder structure including `pyproject.toml`.

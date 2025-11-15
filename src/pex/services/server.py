@@ -74,37 +74,35 @@ def _get_printers():
 
 @app.route('/pex/print', methods=['POST'])
 def _post_print():
-    printer_name = request.form.get('printer', config.get_option('printer_default'))
-    orientation = request.form.get('orientation', 'portrait')
-    quantity = int(request.form.get('quantity', 1))
+    args = dict()
+
+    # Default arguments
+    args['printer_name'] = request.form.get('printer', config.get_option('printer_default'))
+    args['orientation'] = request.form.get('orientation', 'portrait')
+    args['quantity'] = int(request.form.get('quantity', 1))
 
     # Format "paper_format"
     formats = request.form.getlist('format')
     if not formats:
-        paper_format = "A4"
+        args['paper_format'] = "A4"
     else:
         if len(formats) == 1 and not is_int(formats[0]):
-            paper_format = formats[0]
+            args['paper_format'] = formats[0]
         elif len(formats) >= 2 and is_int(formats[0]) and is_int(formats[1]):
-            paper_format = [int(f) for f in formats]
+            args['paper_format'] = [int(f) for f in formats]
         else:
-            paper_format = formats[0]
+            args['paper_format'] = formats[0]
 
+    # Print PDF file
     if 'file' in request.files:
-        file = request.files['file']
-        timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        filename = os.path.basename(file.filename or f"custom_file-{timestamp}.pdf").replace(' ', '_')
-        filepath = os.path.join(TEMP_PATH, filename)
-        file.save(filepath)
-
         try:
-            args = {
-                "filepath": filepath,
-                "printer_name": printer_name,
-                "paper_format": paper_format,
-                "orientation": orientation,
-                "quantity": quantity,
-            }
+            file = request.files['file']
+            timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            filename = os.path.basename(file.filename or f"custom_file-{timestamp}.pdf").replace(' ', '_')
+            filepath = os.path.join(TEMP_PATH, filename)
+            file.save(filepath)
+            args['filepath'] = filepath
+
             printer.print_file(**args)
             return response_success({
                 "message": "The file has been successfully printed.",
@@ -112,19 +110,15 @@ def _post_print():
             })
         except Exception as e:
             return response_error(str(e))
+
+    # Print Label Lines
     elif 'lines' in request.form:
-        lines = request.form.getlist('lines')
         try:
-            args = {
-                "lines": lines,
-                "printer_name": printer_name,
-                "paper_format": paper_format,
-                "orientation": orientation,
-                "quantity": quantity,
-                "font_name": request.form.get('font_name', None),
-                "font_size": int(request.form.get('font_size', 10)),
-                "line_height": int(request.form.get('line_height', 12)),
-            }
+            args['lines'] = request.form.getlist('lines')
+            args['font_name'] = request.form.get('font_name', None),
+            args['font_size'] = int(request.form.get('font_size', 10)),
+            args['line_height'] = int(request.form.get('line_height', 12)),
+
             printer.print_lines(**args)
             return response_success({
                 "message": "The label has been successfully printed.",
@@ -132,6 +126,8 @@ def _post_print():
             })
         except Exception as e:
             return response_error(str(e))
+
+    # Invalid Command
     else:
         return response_error("You need to either pass a file or the desired lines to print.", request.form)
 

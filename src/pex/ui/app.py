@@ -9,12 +9,10 @@ from tkinter import scrolledtext, ttk
 from typing import Callable
 from pex import config
 from pex.services import service
-from pex.version import __VERSION__
+from pex.version import __NAME__, __VERSION__
 
 
-def resource_path(name: str) -> str:
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
-    return str(base / name)
+ROOT_PATH = Path(__file__).resolve().parents[3]
 
 
 class PexApp(tk.Tk):
@@ -43,7 +41,7 @@ class PexApp(tk.Tk):
         self.linux_menu = None
         self.linux_cmd = tk.StringVar(value=config.get_option('linux_command'))
 
-        self.title(f"PEX - Printer Execution Service ({__VERSION__})")
+        self.title(f"{__NAME__} ({__VERSION__})")
         self._set_icon()
         self.setup_ui()
         self.create_menu()
@@ -54,21 +52,20 @@ class PexApp(tk.Tk):
         super().destroy()
 
     def _set_icon(self):
-        if os.name == "nt":
-            ico = resource_path("icon.ico")
-            if os.path.exists(ico):
+        if sys.platform == 'win32':
+            icon = str(ROOT_PATH / 'icon.ico')
+            if os.path.exists(icon):
                 try:
-                    self.iconbitmap(ico)
+                    self.iconbitmap(icon)
                 except tk.TclError:
                     pass
-        for fname in ("icon.png", "icon.gif", "icon.xbm"):
-            f = resource_path(fname)
-            if os.path.exists(f):
+        else:
+            icon = str(ROOT_PATH / 'icon.png')
+            if os.path.exists(icon):
                 try:
-                    self.iconphoto(True, tk.PhotoImage(file=f))
-                    break
+                    self.iconphoto(True, tk.PhotoImage(file=icon))
                 except tk.TclError:
-                    continue
+                    pass
 
     def setup_ui(self):
         frame = tk.Frame(self)
