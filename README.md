@@ -9,6 +9,9 @@ kiosk systems where seamless printing is mandatory.
 The printer service is accessible via simple HTTP requests, you can configure your printer service 
 using the CLI interface or the provided tk application. 
 
+You can install the [pex-client](https://github.com/pytesNET/pex-client) TypeScript library into 
+your frontend project to seamlessly interact with the PEX server directly from JavaScript.
+
 ## Dependencies
 **Required for Linux**
 - node.js + pm2
