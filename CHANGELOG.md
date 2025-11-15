@@ -1,6 +1,9 @@
 PEX - Changelog
 ===============
 
+## Version 0.4.1 (Beta)
+- Fix: Using `add_cascade` instead of `add_command` (which still worked on windows though).
+
 ## Version 0.4.0 (Beta)
 - Info: New project / folder structure including `pyproject.toml`.
 - Add: New `get_option`, `set_option`, `delete_option` functions instead of per-config ones.
