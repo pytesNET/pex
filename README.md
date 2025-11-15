@@ -2,12 +2,12 @@ PEX - Printer Execution Service
 ===============================
 **P**rinter **ex**ecution service and server utility.
 
-With PEX, print jobs can be sent directly to the printer without going through the standard print dialog. This is 
-especially useful for web projects, Progressive Web Applications (PWAs), or similar tools that aim to bypass some 
-print previews to provide a more native and seamless user experience.
+PEX is a lightweight Python-based printer service and server. It allows direct print jobs to local 
+printers without triggering the usual print dialog. This is especially useful for web apps, PWAs, or 
+kiosk systems where seamless printing is mandatory.
 
-The printer service is accessible via simple HTTP requests, you can configure your printer service using the CLI 
-interface or the provided tk application.
+The printer service is accessible via simple HTTP requests, you can configure your printer service 
+using the CLI interface or the provided tk application. 
 
 ## Dependencies
 **Required for Linux**
@@ -35,7 +35,12 @@ source .venv\bin\activate     # on Linux
 .venv\Scripts\activate        # on Windows
 ```
 
-4. Install PEX as a python package
+4. Install dependencies
+```sh
+pip install -r requirements.txt
+```
+
+5. Install PEX as a python package
 ```sh
 pip install -e .
 ```
