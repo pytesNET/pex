@@ -5,9 +5,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.lib.units import mm
+from fpdf import FPDF
 from pathlib import Path
 from typing import Union, Tuple
 from .. import config
@@ -18,6 +16,7 @@ if sys.platform == "win32":
 JOB_STATUS_SPOOLING = 0x0008
 PRINTER_ORIENT_PORTRAIT = 1
 PRINTER_ORIENT_LANDSCAPE = 2
+PT_TO_MM = 0.352777778
 
 
 def _get_sumatra_path() -> str:
@@ -65,24 +64,6 @@ def _printer_supports_copies(printer_name: str) -> bool:
         return "copies" in out.lower()
     except Exception:
         return False
-
-
-def _wrap_text(text: str, font_name: str, font_size: int, max_width: int) -> list[str]:
-    words = text.split()
-    lines = []
-    current_line = ""
-    for word in words:
-        test_line = current_line + " " + word if current_line else word
-        line_width = stringWidth(test_line, font_name, font_size)
-        if line_width <= max_width:
-            current_line = test_line
-        else:
-            if current_line:
-                lines.append(current_line)
-            current_line = word
-    if current_line:
-        lines.append(current_line)
-    return lines
 
 
 def _safe_remove(path: str, attempts: int = 5) -> bool:
@@ -338,8 +319,34 @@ def print_file(
         _print_on_linux(filepath, printer, fmt, orientation, quantity)
 
 
+def _wrap_text(line: dict, pdf, max_width: float) -> list[dict]:
+    text = str(line.get("text", "") or "")
+    words: list[str] = text.split()
+    current_line = ""
+    result: list[dict] = []
+
+    for word in words:
+        test_line = (current_line + " " + word).strip()
+        line_width = pdf.get_string_width(test_line)
+        if line_width <= max_width:
+            current_line = test_line
+        else:
+            if current_line:
+                new_line = dict(line)
+                new_line["text"] = current_line
+                result.append(new_line)
+            current_line = word
+
+    if current_line:
+        new_line = dict(line)
+        new_line["text"] = current_line
+        result.append(new_line)
+
+    return result
+
+
 def print_lines(
-    lines: Tuple[str],
+    lines: list[dict],
     printer_name: str,
     paper_format: Union[str, Tuple[int, int]],
     orientation: str = 'portrait',
@@ -364,31 +371,66 @@ def print_lines(
     timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     filepath = os.path.join(tmpdir, f"custom_label-{timestamp}.pdf")
 
-    # Create Canvas
-    width = fmt[0] * mm
-    height = fmt[1] * mm
-    font_name = font_name if type(font_name) is str else 'Helvetica'
+    # Page dimensions
+    width_mm, height_mm = fmt
+    font_name = font_name if isinstance(font_name, str) else 'helvetica'
 
-    c = canvas.Canvas(filepath, pagesize=(width, height))
-    c.setFillColorRGB(0, 0, 0)
+    # Create FPDF-Document
+    pdf = FPDF(
+        orientation='P' if orientation == 'portrait' else 'L',
+        unit='mm',
+        format=(width_mm, height_mm),
+    )
+    pdf.set_auto_page_break(False)
+    pdf.add_page()
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font(font_name, size=font_size)
 
-    # Wrap / Handle lines
-    max_text_width = width - 2 * mm
-    wrapped_lines = []
+    # Wrap Text
+    margin_mm = 2.0
+    max_text_width_mm = width_mm - 2 * margin_mm
+    wrapped_lines: list[dict] = []
     for line in lines:
-        wrapped_lines.extend(_wrap_text(line, font_name, font_size, max_text_width))
+        wrapped_lines.extend(_wrap_text(line, pdf, max_text_width_mm))
 
-    total_text_height = line_height * len(wrapped_lines)
-    start_y = (height + total_text_height) / 2 - font_size
+    # Vertical alignment
+    total_text_height_mm = 0.0
+    for line in wrapped_lines:
+        h = line.get("height", line_height)
+        if not isinstance(h, (int, float)):
+            h = line_height
+        total_text_height_mm += h * PT_TO_MM
 
-    # Draw lines
-    for i, line in enumerate(wrapped_lines):
-        text_width = stringWidth(line, font_name, font_size)
-        x = (width - text_width) / 2
-        y = start_y - i * line_height
-        c.setFont(font_name, font_size)
-        c.drawString(x, y, line)
-    c.save()
+    y = (height_mm - total_text_height_mm) / 2 + font_size * PT_TO_MM
+
+    # Write lines
+    for line in wrapped_lines:
+        text = str(line.get("text", "") or "")
+        font = line.get("font", font_name if isinstance(font_name, str) else 'Helvetica')
+        size = line.get("size", font_size)
+        height = line.get("height", line_height)
+        if not isinstance(height, (int, float)):
+            height = line_height
+        line_step_mm = height * PT_TO_MM
+        text_width_mm = pdf.get_string_width(text)
+        x = (width_mm - text_width_mm) / 2
+
+        style = ""
+        if line.get("bold", False):
+            style += "B"
+        if line.get("italic", False):
+            style += "I"
+        if line.get("strikethrough", False):
+            style += "S"
+        if line.get("underline", False):
+            style += "U"
+
+        pdf.set_font(font, style=style, size=size)
+        pdf.text(x=x, y=y, txt=text)
+
+        y += line_step_mm
+
+    pdf.output(filepath)
 
     # Print
     if sys.platform == "win32":

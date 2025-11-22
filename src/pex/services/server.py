@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify
@@ -74,7 +75,7 @@ def _get_printers():
 
 @app.route('/pex/print', methods=['POST'])
 def _post_print():
-    args = dict()
+    args: dict = dict()
 
     # Default arguments
     args['printer_name'] = request.form.get('printer', config.get_option('printer_default'))
@@ -114,10 +115,44 @@ def _post_print():
     # Print Label Lines
     elif 'lines' in request.form:
         try:
-            args['lines'] = request.form.getlist('lines')
-            args['font_name'] = request.form.get('font_name', None),
-            args['font_size'] = int(request.form.get('font_size', 10)),
-            args['line_height'] = int(request.form.get('line_height', 12)),
+            args['font_name'] = request.form.get('font_name', None)
+            args['font_size'] = int(request.form.get('font_size', 10))
+            args['line_height'] = int(request.form.get('line_height', 12))
+
+            # Parse lines
+            raw_lines = request.form.getlist("lines")
+            lines = []
+            for entry in raw_lines:
+                try:
+                    parsed = json.loads(entry)
+                except json.JSONDecodeError:
+                    parsed = entry
+
+                if isinstance(parsed, str):
+                    lines.append({
+                        'text': parsed,
+                        'font': args['font_name'],
+                        'size': args['font_size'],
+                        'height': args['line_height'],
+                        'bold': False,
+                        'italic': False,
+                        'underline': False,
+                        'strikethrough': False,
+                    })
+                elif isinstance(parsed, dict):
+                    lines.append({
+                        'text': parsed.get('text', ''),
+                        'font': parsed.get('font', args['font_name']),
+                        'size': parsed.get('size', args['font_size']),
+                        'height': parsed.get('height', args['line_height']),
+                        'bold': parsed.get('bold', False),
+                        'italic': parsed.get('italic', False),
+                        'underline': parsed.get('underline', False),
+                        'strikethrough': parsed.get('strikethrough', False),
+                    })
+                else:
+                    return response_error("The lines structure is invalid or corrupt.", {'lines': lines})
+            args["lines"] = lines
 
             printer.print_lines(**args)
             return response_success({

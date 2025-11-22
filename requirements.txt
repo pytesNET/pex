@@ -1,8 +1,8 @@
 flask
+fpdf2
 pandas
 Pillow
 pywin32; sys_platform == "win32"
-reportlab
 setuptools>=70
 tabula-py
 waitress>=2.1
