@@ -8,6 +8,7 @@ from pathlib import Path
 from tkinter import scrolledtext, ttk
 from typing import Callable
 from pex import config
+from pex.updater import perform as perform_update
 from pex.services import service
 from pex.version import __NAME__, __VERSION__
 
@@ -167,57 +168,16 @@ class PexApp(tk.Tk):
         self._exec_inflight = True
         self.log("Updating PEX, please wait...")
 
-        logs = []
-        success = True
+        logs: list[str] = []
+
+        def ui_log(msg: str) -> None:
+            if msg:
+                logs.append(msg)
+
         try:
-            # Check current state
-            try:
-                installed = service.is_installed()
-                running = service.is_running() if installed else False
-            except Exception as e:
-                installed, running = False, False
-                logs.append(f"[ERROR] Could not read service status: {e}")
-
-            # Stop service
-            if installed and running:
-                logs.append("[INFO] Stopping service...")
-                status, msg = service.stop()
-                if status:
-                    logs.append(f"[SUCCESS] Service successfully stopped")
-                else:
-                    logs.append(f"[ERROR] {msg}")
-
-            # Update
-            logs.append("[INFO] Pulling latest changes from git...")
-            try:
-                res = subprocess.run(['git', 'pull'], capture_output=True, text=True, timeout=120)
-                if res.stdout:
-                    logs.append(res.stdout.strip())
-                if res.stderr:
-                    logs.append(res.stderr.strip())
-                if res.returncode != 0:
-                    success = False
-                    logs.append(f"[ERROR] git pull failed with exit code {res.returncode}")
-            except subprocess.TimeoutExpired:
-                success = False
-                logs.append("[ERROR] git pull timed out")
-
-            # Start service
-            if installed and running and success:
-                logs.append("[INFO] Starting service...")
-                status, msg = service.start()
-                if status:
-                    logs.append(f"[SUCCESS] Service successfully started")
-                else:
-                    logs.append(f"[ERROR] {msg}")
-
-            # Return
-            message = "\n".join(l for l in logs if l)
+            success = perform_update(ui_log)
+            message = "\n".join(logs)
             return success, message
-        except subprocess.CalledProcessError as e:
-            return False, "\n".join(logs + [f"[EXCEPTION] {e.output.strip()}"])
-        except Exception as e:
-            return False, "\n".join(logs + [f"[EXCEPTION] {e}"])
         finally:
             self._exec_inflight = False
 

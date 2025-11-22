@@ -2,6 +2,10 @@ PEX - Changelog
 ===============
 
 ## Version 0.4.1 (Beta)
+- Add: Support per-line font-declaration for print_label.
+- Add: New FPDF2 dependency, which replaces reportlab, for better font-support.
+- Add: New common updater script for UI + CLI.
+- Update: Install new requirements / reinstall pex package on updater.
 - Update: Clean up server.py arguments dictionary.
 - Fix: Using `add_cascade` instead of `add_command` (which still worked on windows though).
 - Fix: `_set_icon` did not set the desired icon correctly.
