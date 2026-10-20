@@ -1,0 +1,13 @@
+# Textdateien automatisch erkennen und LF erzwingen
+* text=auto eol=lf
+
+# Binärdateien nicht verändern
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary

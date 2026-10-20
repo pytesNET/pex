@@ -301,6 +301,17 @@ def ensure_admin(force_admin: bool):
 def run(force_admin: bool | None = None):
     force_admin = ("--admin" in sys.argv) if force_admin is None else force_admin
     ensure_admin(force_admin)
+
+    if sys.platform == "win32":
+        tcl_root = Path(sys.base_prefix) / "tcl"
+        libraries = (
+            ("TCL_LIBRARY", tcl_root / f"tcl{tk.TclVersion}", "init.tcl"),
+            ("TK_LIBRARY", tcl_root / f"tk{tk.TkVersion}", "tk.tcl"),
+        )
+        for variable, directory, entry_file in libraries:
+            if (directory / entry_file).is_file():
+                os.environ.setdefault(variable, str(directory))
+
     app = PexApp()
     app.mainloop()
 
