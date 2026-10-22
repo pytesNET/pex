@@ -11,7 +11,7 @@ PM2_CMD = os.environ.get("PM2_PATH", "pm2")
 
 ROOT_PATH = Path(__file__).resolve().parents[3]
 VENV_PATH = ROOT_PATH / ".venv"
-PYTHON_PATH = VENV_PATH / "bin" / "python"
+PYTHON_PATH = Path(__import__("sys").executable)
 PEX_PATH = VENV_PATH / "bin" / "pex"
 TEMP_PATH = ROOT_PATH / "temp"
 TEMP_ERR_FILE = TEMP_PATH / "error.log"
@@ -49,6 +49,8 @@ def _jlist() -> Tuple[bool, list]:
         return False, [out]
     try:
         data = json.loads(out or "[]")
+        if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+            raise ValueError("Expected a process list")
         return True, data
     except Exception as exc:
         return False, [f"Error during parsing of pm2 jlist : {exc}\nRaw: {out}"]
@@ -70,31 +72,31 @@ def _find_proc_by_name(name: str):
 def start():
     ok, _ = _ensure_pm2()
     if not ok:
-        return _
+        return False, _
     return _run([PM2_CMD, "start", __SERVICE_NAME__])
 
 
 def stop():
     ok, _ = _ensure_pm2()
     if not ok:
-        return _
+        return False, _
     return _run([PM2_CMD, "stop", __SERVICE_NAME__])
 
 
 def restart():
     ok, _ = _ensure_pm2()
     if not ok:
-        return _
+        return False, _
     return _run([PM2_CMD, "restart", __SERVICE_NAME__])
 
 
 def status():
     ok, _ = _ensure_pm2()
     if not ok:
-        return _
+        return False, _
     proc = _find_proc_by_name(__SERVICE_NAME__)
     if not proc:
-        return False, f"Service {__SERVICE_NAME__} could not be installed."
+        return False, f"Service {__SERVICE_NAME__} is not installed."
     status = proc.get("pm2_env", {}).get("status")
     pid = proc.get("pid")
     return True, f"{__SERVICE_NAME__}: {status} (pid={pid})"
@@ -128,6 +130,7 @@ def install():
     cmd = [
         PM2_CMD, "start", PEX_PATH,
         "--name", __SERVICE_NAME__,
+        "--cwd", str(ROOT_PATH),
         "--interpreter", PYTHON_PATH,
         "--output", TEMP_OUT_FILE,
         "--error", TEMP_ERR_FILE,
@@ -138,7 +141,9 @@ def install():
     if not ok:
         return False, out
 
-    _run([PM2_CMD, "save"])
+    saved, message = _run([PM2_CMD, "save"])
+    if not saved:
+        return False, f"PM2 changed the process but could not persist it: {message}"
     return True, f"Service {__SERVICE_NAME__} successfully installed (pm2)."
 
 
@@ -151,5 +156,7 @@ def uninstall():
     if not ok:
         return False, out
 
-    _run([PM2_CMD, "save"])
+    saved, message = _run([PM2_CMD, "save"])
+    if not saved:
+        return False, f"PM2 changed the process but could not persist it: {message}"
     return True, f"Service {__SERVICE_NAME__} successfully removed."

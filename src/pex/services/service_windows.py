@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from pathlib import Path
 from ..version import __SERVICE_NAME__
 
@@ -10,7 +11,7 @@ TEMP_PATH = ROOT_PATH / "temp"
 TEMP_ERR_FILE = TEMP_PATH / "error.log"
 TEMP_OUT_FILE = TEMP_PATH / "out.log"
 TOOLS_PATH = ROOT_PATH / "tools"
-NSSM_PATH = TOOLS_PATH / "nssm.exe"
+NSSM_PATH = Path(os.environ.get("PEX_NSSM_PATH", TOOLS_PATH / "nssm.exe"))
 
 
 def _run_nssm_command(command):
@@ -20,7 +21,7 @@ def _run_nssm_command(command):
     try:
         result = subprocess.run(
             [NSSM_PATH, command, __SERVICE_NAME__],
-            capture_output=True, text=True, shell=True, encoding=os.device_encoding(1)
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
         )
         if result.returncode == 0:
             return True, result.stdout.replace('\x00', '').strip()
@@ -66,18 +67,18 @@ def install():
     os.makedirs(TEMP_PATH, exist_ok=True)
     try:
         result = subprocess.run(
-            [str(NSSM_PATH), "install", __SERVICE_NAME__, str(PEX_PATH), "run",],
+            [str(NSSM_PATH), "install", __SERVICE_NAME__, sys.executable, "-m", "pex", "run"],
             capture_output=True, text=True, timeout=30
         )
         if result.returncode != 0:
             return False, (result.stdout + "\n" + result.stderr).strip()
 
-        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppDirectory", str(ROOT_PATH)], timeout=10)
-        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppStdout", str(TEMP_OUT_FILE)], timeout=10)
-        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppStderr", str(TEMP_ERR_FILE)], timeout=10)
-        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppStopMethodConsole", "1500"], timeout=10)
-        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppKillProcessTree", "1"], timeout=10)
-        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "Start", "SERVICE_AUTO_START"], timeout=10)
+        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppDirectory", str(ROOT_PATH)], timeout=10, check=True, capture_output=True)
+        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppStdout", str(TEMP_OUT_FILE)], timeout=10, check=True, capture_output=True)
+        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppStderr", str(TEMP_ERR_FILE)], timeout=10, check=True, capture_output=True)
+        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppStopMethodConsole", "1500"], timeout=10, check=True, capture_output=True)
+        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "AppKillProcessTree", "1"], timeout=10, check=True, capture_output=True)
+        subprocess.run([str(NSSM_PATH), "set", __SERVICE_NAME__, "Start", "SERVICE_AUTO_START"], timeout=10, check=True, capture_output=True)
 
         return True, f"Service {__SERVICE_NAME__} successfully installed: {str(PEX_PATH)} run"
     except Exception as exc:

@@ -1,9 +1,9 @@
-flask
-fpdf2
-pandas
-Pillow
-pywin32; sys_platform == "win32"
+# Runtime packages; requirements.lock pins the verified runtime and build versions.
+Flask>=3.1.3,<4
+Werkzeug>=3.1.8,<4
+fpdf2>=2.8.7,<3
+Pillow>=12.2.0,<13
+pywin32>=311; sys_platform == "win32"
+waitress>=3.0.2,<4
 setuptools>=70
-tabula-py
-waitress>=2.1
 wheel

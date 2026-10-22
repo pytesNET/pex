@@ -1,7 +1,6 @@
 import argparse
 import subprocess
 from typing import Callable
-from .ui import app
 from .config import get_option, set_option, delete_option
 from .updater import perform as perform_update
 from .utils import coerce_values, SimpleFormatter
@@ -55,7 +54,8 @@ def _cmd_stop(_: argparse.Namespace) -> int:
 
 
 def _cmd_ui(_: argparse.Namespace) -> int:
-    return _wrap_noop(lambda: app.run(True))
+    from .ui import app
+    return _wrap_noop(app.run)
 
 
 def _cmd_update(_: argparse.Namespace) -> int:
@@ -108,7 +108,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = p.add_subparsers(dest="cmd", title="Commands", required=True)
     sub.add_parser("help", help="Show this help message").set_defaults(func=_cmd_help)
-    sub.add_parser("ui", help="Start the TK desktop UI").set_defaults(func=_cmd_ui)
+    ui = sub.add_parser("ui", help="Start the TK desktop UI")
+    ui.add_argument("--admin", action="store_true", help="Compatibility flag; the Windows UI always requests administrator privileges")
+    ui.set_defaults(func=_cmd_ui)
     sub.add_parser("install", help="Install the printer service").set_defaults(func=_cmd_install)
     sub.add_parser("uninstall", help="Uninstall the printer service").set_defaults(func=_cmd_uninstall)
     sub.add_parser("status", help="Show printer service status").set_defaults(func=_cmd_status)
@@ -148,4 +150,8 @@ def main(argv: list[str] | None = None) -> int:
     except AttributeError:
         parser.print_help()
         return 2
-    return int(func(args))
+    try:
+        return int(func(args))
+    except (OSError, RuntimeError, ValueError, TimeoutError) as error:
+        print(f"PEX: {error}", file=__import__("sys").stderr)
+        return 1

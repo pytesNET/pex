@@ -22,6 +22,8 @@ lib/
 lib64/
 parts/
 sdist/
+temp/*
+!temp/.gitkeep
 var/
 *.egg-info/
 .installed.cfg
@@ -69,3 +71,10 @@ Desktop.ini
 pex_config.json
 pexconfig.json
 config.json
+
+# PEX local runtime state and recovery snapshots
+*.sqlite3
+*.sqlite3-*
+*.lock
+!requirements.lock
+recovery/

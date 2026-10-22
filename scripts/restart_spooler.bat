@@ -1,4 +1,6 @@
 @echo off
+setlocal
 net stop spooler /y
-del /Q /F %systemroot%\System32\spool\PRINTERS\*
+if errorlevel 1 exit /b 1
 net start spooler
+exit /b %errorlevel%
