@@ -109,6 +109,7 @@ def _get_status():
 def _get_printers():
     default = config.get_option("printer_default")
     return response_success({"printers": printer.list_printers(),
+                             "aliases": config.get_option("printers", {}) or {},
                              "printer_default": printer.resolve_printer_name(default) if default else None})
 
 

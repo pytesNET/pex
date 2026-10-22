@@ -65,14 +65,15 @@ class PexApp(tk.Tk):
 
     def _set_icon(self):
         if sys.platform == 'win32':
-            icon = str(ROOT_PATH / 'icon.ico')
+            icon = str(ROOT_PATH / 'icon-color.ico')
             if os.path.exists(icon):
                 try:
+                    self.iconbitmap(default=icon)
                     self.iconbitmap(icon)
                 except tk.TclError:
                     pass
         else:
-            icon = str(ROOT_PATH / 'icon.png')
+            icon = str(ROOT_PATH / 'icon-color.png')
             if os.path.exists(icon):
                 try:
                     self.iconphoto(True, tk.PhotoImage(file=icon))

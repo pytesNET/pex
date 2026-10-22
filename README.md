@@ -170,9 +170,15 @@ For LAN access, configure the host and protect the connection appropriately.
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | GET | `/pex/status` | Service version, printer configuration and available printers |
-| GET | `/pex/printers` | OS printer names and the resolved default printer |
+| GET | `/pex/printers` | OS printer names, configured aliases and the resolved default printer |
 | POST | `/pex/print` | Submit a PDF or text label |
 | GET | `/pex/jobs/<id>` | Read a job's state and result |
+
+The printer-list response includes `result.aliases`, a mapping of configured aliases
+to OS printer names, such as `{"labels": "Zebra ZD411"}`. Use an alias as the display
+label in your interface and as the `printer` value when printing. Configured aliases
+remain listed even when their printers are currently unavailable; `result.printers`
+contains the OS-discovered names.
 
 ### Print requests
 

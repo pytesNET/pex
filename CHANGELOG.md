@@ -1,19 +1,24 @@
 PEX - Changelog
 ===============
 
+## Version 0.5.1 (Beta)
+- Add: Configured printer aliases in the /pex/printers response for interface display labels.
+- Update: Use the blue icon variant for the desktop window and inherited dialog icons.
+- Fix: Store Windows icon sizes as bitmap resources so Tk loads the matching image without extra scaling.
+
 ## Version 0.5.0 (Beta)
-- Add: About dialog with copyright, bundled-tool licenses and project links.
-- Fix: Move first-open PDF imports off the UI thread; show saved aliases while discovering printers.
-- Update: Shared desktop field styling and shorter Settings menu labels.
-- Add: API token management in the desktop UI: masked display, copy, generation and saving.
-- Fix: Single-instance configuration dialogs and asynchronous printer discovery with loading feedback.
 - Info: API authentication is enabled by default. Configure a token and allowed web origin before using browser clients.
+- Add: About dialog with copyright, bundled-tool licenses and project links.
+- Add: API token management in the desktop UI: masked display, copy, generation and saving.
 - Add: Authenticated API, explicit origin allowlist, bounded input validation and consistent JSON errors.
 - Add: Per-printer FIFO queues, durable job IDs/status, optional asynchronous responses and idempotency keys.
 - Add: Bounded process calls and conservative unknown states; no automatic retry after uncertain submission.
 - Add: Runtime dependency metadata, pinned runtime versions and regression tests.
 - Update: Separate spooler restart from explicitly confirmed queue deletion.
 - Update: Isolated update preflight, pinned candidate commits, recovery snapshots and restart attempts on failure.
+- Update: Shared desktop field styling and shorter Settings menu labels.
+- Fix: Move first-open PDF imports off the UI thread; show saved aliases while discovering printers.
+- Fix: Single-instance configuration dialogs and asynchronous printer discovery with loading feedback.
 - Fix: Missing / Wrong tcl/tk paths (at least on Windows machines).
 - Fix: Duplicate Linux submissions, concurrent PDF filename collisions, per-job paper/orientation/copies.
 - Fix: Windows printing no longer changes shared printer defaults; custom labels require an existing driver form.

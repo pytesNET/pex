@@ -95,6 +95,21 @@ class RuntimeTest(unittest.TestCase):
             self.assertEqual(self.client().get(endpoint).status_code, 401)
         self.assertEqual(self.post(headers={"Authorization": "Bearer wrong"}).status_code, 401)
 
+    def test_printer_listing_includes_aliases_and_resolved_default(self):
+        self.settings["printers"] = {"labels": "Warehouse", "shipping": "Warehouse", "offline": "Offline printer"}
+        response = self.client().get("/pex/printers", headers={"Authorization": "Bearer test-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["result"], {
+            "printers": ["Warehouse"], "aliases": self.settings["printers"], "printer_default": "Warehouse"})
+
+    def test_printer_listing_without_aliases_or_default(self):
+        self.settings["printers"] = {}
+        self.settings["printer_default"] = None
+        response = self.client().get("/pex/printers", headers={"Authorization": "Bearer test-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["result"], {
+            "printers": ["Warehouse"], "aliases": {}, "printer_default": None})
+
     def test_missing_token_fails_closed(self):
         self.settings["server"]["token"] = ""
         self.assertEqual(self.post().status_code, 503)
@@ -407,7 +422,7 @@ class ServiceTest(unittest.TestCase):
         script = "import sys; sys.modules['tkinter']=None; from pex.cli import main; main(['--version'])"
         result = subprocess.run([sys.executable, "-B", "-c", script], capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("0.5.0", result.stdout)
+        self.assertIn("0.5.1", result.stdout)
 
 
 class UpdaterTest(unittest.TestCase):
