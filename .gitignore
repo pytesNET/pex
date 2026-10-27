@@ -78,3 +78,6 @@ config.json
 *.lock
 !requirements.lock
 recovery/
+
+# Generated PDF-file destinations
+output/

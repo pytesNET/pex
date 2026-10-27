@@ -1,6 +1,11 @@
 PEX - Changelog
 ===============
 
+## Unreleased
+- Add: pypdf for PDF page-size validation.
+- Fix: Windows virtual PDF destinations export validated labels to unique files in output/.
+- Fix: Allow Windows custom paper sizes without a pre-registered driver form by using SumatraPDF's per-job PDF-size detection.
+
 ## Version 0.5.1 (Beta)
 - Add: Configured printer aliases in the /pex/printers response for interface display labels.
 - Update: Use the blue icon variant for the desktop window and inherited dialog icons.

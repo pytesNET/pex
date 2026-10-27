@@ -5,6 +5,8 @@ import logging
 import math
 import os
 import re
+import shutil
+import uuid
 import subprocess
 import sys
 import tempfile
@@ -13,6 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from fpdf import FPDF
+from pypdf import PdfReader, PdfWriter
+from pypdf.errors import PdfReadError
 from .. import config
 
 if sys.platform == "win32":
@@ -79,11 +83,11 @@ def _print_on_linux(filepath: str, printer: str, fmt: tuple[float, float],
     return {"backend": "cups", "spooler_ids": job_ids}
 
 
-def _windows_paper(printer: str, fmt: tuple[float, float]) -> str:
+def _windows_paper(printer: str, fmt: tuple[float, float]) -> str | None:
     """Resolve an existing driver form without changing global printer defaults.
 
-    The bundled Sumatra 3.5.2 requires a named driver form for custom labels.
-    Newer-only custom-size switches must not silently fail on that version.
+    Return None to use Sumatra's per-job PDF-size detection for custom paper.
+    No global printer defaults or registered forms are modified.
     """
     handle = win32print.OpenPrinter(printer)
     try:
@@ -99,15 +103,96 @@ def _windows_paper(printer: str, fmt: tuple[float, float]) -> str:
         dimensions = sorted((size["x"] / 10, size["y"] / 10))
         if all(abs(a - b) <= 0.5 for a, b in zip(dimensions, sorted(fmt))):
             return str(paper_id)
-    raise ValueError(f"No driver paper form matches {fmt[0]:g} x {fmt[1]:g} mm. Configure that label size in the printer driver.")
+    return None
+
+
+def _validate_pdf_paper(filepath: str, fmt: tuple[float, float], orientation: str) -> None:
+    """Require a uniform PDF whose physical page size matches the requested label.
+
+    Sumatra 3.5.2 uses the first page to set a custom DEVMODE. Explicit rotation
+    options disable that detection, so orientation must already match the PDF.
+    """
+    expected = sorted(fmt, reverse=orientation == "landscape")
+    try:
+        with Path(filepath).open("rb") as stream:
+            reader = PdfReader(stream)
+            if reader.is_encrypted or not reader.pages:
+                raise ValueError("Custom paper requires an unencrypted PDF with at least one page.")
+            for page in reader.pages:
+                # Sumatra's effective page rectangle includes cropping and rotation.
+                box = page.cropbox
+                unit = float(page.get("/UserUnit", 1))
+                actual = [float(box.width) * unit * PT_TO_MM,
+                          float(box.height) * unit * PT_TO_MM]
+                if page.rotation % 90:
+                    raise ValueError("PDF page rotation must be a multiple of 90 degrees.")
+                if page.rotation % 180:
+                    actual.reverse()
+                if any(not math.isfinite(value) for value in actual) or any(
+                    abs(actual_value - expected_value) > 0.5
+                    for actual_value, expected_value in zip(actual, expected)
+                ):
+                    raise ValueError("Every PDF page must match the requested paper size and orientation for custom paper.")
+    except (PdfReadError, KeyError, TypeError, OverflowError) as error:
+        raise ValueError("The PDF page size could not be read for custom paper.") from error
+
+
+def _is_windows_pdf_printer(printer: str) -> bool:
+    """Identify PDF destinations by driver, including renamed printer queues."""
+    handle = win32print.OpenPrinter(printer)
+    try:
+        driver = win32print.GetPrinter(handle, 2).get("pDriverName", "").casefold()
+        return driver in {"adobe pdf converter", "microsoft print to pdf"}
+    finally:
+        win32print.ClosePrinter(handle)
+
+
+def _save_pdf_output(filepath: str, fmt: tuple[float, float],
+                     orientation: str, quantity: int) -> dict[str, Any]:
+    """Export the finished PDF without interactive virtual-printer dialogs.
+
+    PDF destinations are file exports, not spooler submissions. Preserve original
+    bytes for one copy; repeat the original pages when multiple copies are asked.
+    """
+    _validate_pdf_paper(filepath, fmt, orientation)
+    directory = config.ROOT_PATH / "output"
+    directory.mkdir(parents=True, exist_ok=True)
+    destination = directory / f"pex-{uuid.uuid4().hex}.pdf"
+    created = False
+    try:
+        with Path(filepath).open("rb") as source, destination.open("xb") as output:
+            created = True
+            if quantity == 1:
+                shutil.copyfileobj(source, output)
+            else:
+                reader = PdfReader(source)
+                writer = PdfWriter()
+                for _ in range(quantity):
+                    writer.append(reader)
+                writer.write(output)
+        _validate_pdf_paper(str(destination), fmt, orientation)
+    except Exception:
+        # Only remove the incomplete file created for this invocation.
+        if created:
+            destination.unlink(missing_ok=True)
+        raise
+    return {"backend": "pdf-file", "spooler_ids": [], "output_file": str(destination)}
 
 
 def _print_on_windows(filepath: str, printer: str, fmt: tuple[float, float],
                       orientation: str, quantity: int) -> dict[str, Any]:
     if quantity > 999:
         raise ValueError("The bundled SumatraPDF supports at most 999 copies per job.")
+    if _is_windows_pdf_printer(printer):
+        return _save_pdf_output(filepath, fmt, orientation, quantity)
     paper = _windows_paper(printer, fmt)
-    settings = f"noscale,{orientation},{quantity}x,paper={paper}"
+    if paper is None:
+        _validate_pdf_paper(filepath, fmt, orientation)
+        # Force PDF-size detection, including standard sizes absent from this driver.
+        # Do not pass portrait/landscape: that disables detection in Sumatra 3.5.2.
+        settings = f"noscale,{quantity}x,paperkind=0"
+    else:
+        settings = f"noscale,{orientation},{quantity}x,paper={paper}"
     result = subprocess.run([_get_sumatra_path(), "-silent", "-print-to", printer,
                              "-print-settings", settings, filepath],
                             capture_output=True, timeout=_timeout())

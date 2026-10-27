@@ -228,18 +228,20 @@ class PrinterTest(unittest.TestCase):
         with patch.object(printer, "win32print", api, create=True), patch.object(printer, "_get_sumatra_path", return_value="sumatra.exe"), patch.object(printer.subprocess, "run", return_value=SimpleNamespace(returncode=0)) as run:
             printer._print_on_windows("x.pdf", "P", (51,25), "landscape", 3)
             api.SetPrinter.assert_not_called()
-            api.OpenPrinter.assert_called_once_with("P")
+            api.OpenPrinter.assert_any_call("P")
             self.assertIn("noscale,landscape,3x,paper=256", run.call_args.args[0])
             self.assertNotIn("-exit-on-print", run.call_args.args[0])
 
-    def test_windows_missing_form_fails_before_submission(self):
+    def test_windows_missing_form_uses_validated_pdf_size(self):
         api = MagicMock()
         api.GetPrinter.return_value = {"pPortName": "PORT"}
         api.DeviceCapabilities.side_effect = [[], []]
-        with patch.object(printer, "win32print", api, create=True), patch.object(printer.subprocess, "run") as run:
-            with self.assertRaises(ValueError):
-                printer._print_on_windows("x.pdf", "P", (51,25), "portrait", 1)
-            run.assert_not_called()
+        with patch.object(printer, "win32print", api, create=True), patch.object(printer, "_validate_pdf_paper") as validate, patch.object(printer, "_get_sumatra_path", return_value="sumatra.exe"), patch.object(printer.subprocess, "run", return_value=SimpleNamespace(returncode=0)) as run:
+            printer._print_on_windows("x.pdf", "P", (51,25), "portrait", 1)
+            validate.assert_called_once_with("x.pdf", (51,25), "portrait")
+            self.assertIn("noscale,1x,paperkind=0", run.call_args.args[0])
+            api.SetPrinter.assert_not_called()
+            api.AddForm.assert_not_called()
 
     def test_render_german_and_styles(self):
         content = printer.render_lines([{"text": "Größe: äöü ß €", "bold": True, "size": 8}], "label")

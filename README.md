@@ -180,6 +180,22 @@ label in your interface and as the `printer` value when printing. Configured ali
 remain listed even when their printers are currently unavailable; `result.printers`
 contains the OS-discovered names.
 
+### Virtual PDF destinations on Windows
+
+Queues using **Adobe PDF Converter** or **Microsoft Print To PDF** are treated
+as PDF-file destinations. PEX saves the already-rendered label to
+`output/pex-<unique-id>.pdf` under its data directory (an editable checkout uses
+the project directory). This works from the Windows service without an invisible
+Save As dialog. No virtual printer driver or Sumatra conversion is run for these
+destinations; one copy preserves the uploaded PDF bytes exactly, and multiple
+copies repeat its pages. Every PDF page must match the requested size/orientation.
+
+The completed job's `result` reports `backend: "pdf-file"` and `output_file`.
+The path is local to the PEX workstation; it is not a browser download URL.
+The `submitted` state means the PDF was saved for these destinations. Physical
+printers continue to submit through SumatraPDF/CUPS. Output files are retained
+until the operator removes them; temporary-job cleanup does not delete exports.
+
 ### Print requests
 
 Send multipart form data with exactly one PDF upload or text lines. Text-only
@@ -201,8 +217,12 @@ requests also accept URL-encoded form data; JSON request bodies are not supporte
 Line objects support `text`, `font`, `size`, `height` and boolean `bold`, `italic`,
 `underline`, `strikethrough` fields. Generated text must fit on one label and use
 Windows-1252 characters; upload a PDF with embedded fonts for other Unicode text.
-Windows requires a matching paper size in the printer driver. Portrait uses the
-shorter page dimension as width; use landscape for a wide label.
+Windows uses a matching driver paper size when available. Otherwise SumatraPDF
+passes the PDF page size to the driver as a per-job custom size, without changing
+printer defaults or registering forms. In that case every PDF page must already
+match the requested size and orientation (within 0.5 mm). The driver must accept
+custom sizes; PEX cannot override hardware limits. Portrait uses the shorter
+page dimension as width; use landscape for a wide label.
 
 Example text label (requires the configured `labels` printer alias):
 

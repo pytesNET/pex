@@ -209,7 +209,9 @@ def _post_print():
             return response_error("Print submission could not be confirmed. Check the printer before retrying.",
                                   {"job": job}, 502, job["error_code"] or "print_failed")
         code = 200 if job["state"] == "submitted" else 202
-        response, status = response_success({"message": "Print job submitted to the spooler." if code == 200 else "Print job accepted.",
+        saved_pdf = (job.get("result") or {}).get("backend") == "pdf-file"
+        message = "PDF saved to file." if saved_pdf else "Print job submitted to the spooler." if code == 200 else "Print job accepted."
+        response, status = response_success({"message": message,
             "arguments": arguments, "job": job, "replayed": replayed}, code)
         response.headers["Location"] = f"/pex/jobs/{job['id']}"
         if asynchronous:
