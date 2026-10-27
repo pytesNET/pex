@@ -1,7 +1,7 @@
 PEX - Changelog
 ===============
 
-## Unreleased
+## Version 0.5.2 (Beta)
 - Add: pypdf for PDF page-size validation.
 - Fix: Windows virtual PDF destinations export validated labels to unique files in output/.
 - Fix: Allow Windows custom paper sizes without a pre-registered driver form by using SumatraPDF's per-job PDF-size detection.

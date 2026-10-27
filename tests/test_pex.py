@@ -424,7 +424,7 @@ class ServiceTest(unittest.TestCase):
         script = "import sys; sys.modules['tkinter']=None; from pex.cli import main; main(['--version'])"
         result = subprocess.run([sys.executable, "-B", "-c", script], capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("0.5.1", result.stdout)
+        self.assertIn("0.5.2", result.stdout)
 
 
 class UpdaterTest(unittest.TestCase):
